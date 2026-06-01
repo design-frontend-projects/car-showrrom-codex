@@ -1,27 +1,25 @@
-import { computed, Injectable, inject } from '@angular/core';
-import { Store } from '@ngrx/store';
-import { AuthActions } from './auth.actions';
+import { Injectable, inject } from '@angular/core';
 import { LoginRequest, RegisterRequest } from './auth.models';
-import { selectAuthError, selectAuthStatus, selectAuthUser } from './auth.selectors';
+import { AuthSignalStore } from './auth.store';
 
 @Injectable({ providedIn: 'root' })
 export class AuthFacade {
-  private readonly store = inject(Store);
+  private readonly store = inject(AuthSignalStore);
 
-  readonly status = this.store.selectSignal(selectAuthStatus);
-  readonly user = this.store.selectSignal(selectAuthUser);
-  readonly error = this.store.selectSignal(selectAuthError);
-  readonly isAuthenticated = computed(() => this.status() === 'authenticated');
+  readonly status = this.store.status;
+  readonly user = this.store.user;
+  readonly error = this.store.error;
+  readonly isAuthenticated = this.store.isAuthenticated;
 
   login(request: LoginRequest): void {
-    this.store.dispatch(AuthActions.loginRequested({ request }));
+    void this.store.login(request);
   }
 
   register(request: RegisterRequest): void {
-    this.store.dispatch(AuthActions.registerRequested({ request }));
+    void this.store.register(request);
   }
 
   signOut(): void {
-    this.store.dispatch(AuthActions.signedOut());
+    this.store.signOut();
   }
 }

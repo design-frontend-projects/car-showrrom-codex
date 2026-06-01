@@ -1,3 +1,3 @@
 # State
 
-Global app state. NgRx Store is used for app/auth/router state, while `UiSignalStore` demonstrates local UI state with NgRx Signals.
+Global app state using NgRx Signal Store. `AppSignalStore` owns app shell state, and `UiSignalStore` owns small landing-page UI state.
