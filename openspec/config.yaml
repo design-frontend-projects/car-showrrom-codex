@@ -1,20 +1,52 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  Project: Car Showroom, an Angular 22 RC SSR application with an Express server entry point.
+  Runtime stack: Angular 22 RC, Angular SSR, Express 5, TypeScript 6, Node 24+, npm 11.
+  UI stack: PrimeNG, PrimeIcons, Tailwind CSS v4, Angular forms/signals, NgRx Signal Store, ngx-translate, Driver.js, Google Maps, and Temporal utilities.
+  Data stack: Prisma 7 with the `prisma-client` generator, explicit generated output under `src/generated/prisma`, PostgreSQL through `@prisma/adapter-pg` and `pg`.
+  Local database target: PostgreSQL at `localhost:5432`, database `postgres`, schema `showroom`, configured by `DATABASE_URL`.
+  Generated Prisma client output is ignored by git and must be regenerated with `npm run prisma:generate`.
+  Server-only database code belongs under `src/server/**`. Angular browser code under `src/app/**` must not import Prisma, `@prisma/adapter-pg`, or `pg`.
+  Existing app structure:
+  - `src/server.ts` is the Express SSR entry point and owns server routes such as `/health` and `/health/db`.
+  - `src/server/db` contains server-only Prisma database access.
+  - `src/app/core` contains singleton services, auth, HTTP, interceptors, logging, maps, and onboarding.
+  - `src/app/features` contains landing, admin, and client feature areas.
+  - `src/app/layout` contains the application shell and navigation.
+  - `src/app/state` contains NgRx Signal Store app/UI state.
+  - `src/app/shared` contains reusable UI components.
+  - `src/app/utils` contains reusable formatting, file, image, and signal-form utilities.
+  Important scripts:
+  - `npm run prisma:validate`
+  - `npm run prisma:generate`
+  - `npm run prisma:migrate:dev`
+  - `npm run build:prod`
+  - `npm test -- --watch=false`
+  Documentation should keep README setup steps aligned with package scripts, Prisma config, Docker Compose behavior, and local `.env.example`.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+rules:
+  proposal:
+    - Keep the "Why" focused on the user or engineering problem, not implementation mechanics.
+    - List new or modified capabilities explicitly and use kebab-case capability names.
+    - Call out affected app areas, server/API boundaries, database/schema impact, dependencies, and build/runtime scripts.
+    - Include non-goals when the request could otherwise expand into adjacent workflows.
+  design:
+    - Prefer existing Angular SSR, Express, Prisma, PrimeNG, Tailwind, and NgRx Signal Store patterns over new abstractions.
+    - Identify browser-vs-server boundaries for every change touching data access, environment variables, auth, files, or third-party SDKs.
+    - For database changes, specify Prisma model/migration impact, generated-client impact, `DATABASE_URL` expectations, and rollback or migration risks.
+    - For frontend changes, describe component placement, state ownership, route impact, i18n impact, and responsive behavior.
+    - For Docker or deployment changes, describe how local development, production build, and container runtime configuration differ.
+  specs:
+    - Requirements must be testable and written with SHALL or MUST.
+    - Every requirement must include at least one `#### Scenario:` using WHEN/THEN bullets.
+    - Add new capability specs for user-visible behavior, server/API contracts, persistence contracts, and cross-cutting platform behavior.
+    - Do not create specs for pure refactors unless they change an observable contract.
+    - Preserve server-only constraints when writing requirements involving Prisma, PostgreSQL, files, environment variables, or Express routes.
+  tasks:
+    - Use checkbox tasks only, formatted as `- [ ] X.Y ...`.
+    - Order tasks by dependency: schema/config, implementation, docs, verification.
+    - Include focused verification tasks for affected scripts, builds, tests, migrations, or runtime checks.
+    - For database work, include Prisma validate, generate, migration, and SSR build verification.
+    - For browser-facing work, include unit tests or focused UI verification where risk justifies it.
+    - Mark tasks complete only after the corresponding code, docs, and verification are actually done.
