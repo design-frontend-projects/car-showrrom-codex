@@ -58,7 +58,14 @@ export class TourService {
       return;
     }
 
-    driver({ showProgress: true, steps }).drive();
+    driver({
+      showProgress: true,
+      overlayOpacity: 0.34,
+      popoverClass: 'showroom-tour',
+      stagePadding: 8,
+      stageRadius: 0,
+      steps
+    }).drive();
     localStorage.setItem(storageKey, 'done');
   }
 }
