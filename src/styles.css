@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "primeicons/primeicons.css";
 @import "driver.js/dist/driver.css";
+@import "./app/layout/app-shell/app-shell.css";
 
 :root {
   --ink: #070708;
@@ -14,6 +15,7 @@
   --surface-panel: #f8f8f6;
   --surface-raised: #ffffff;
   --surface-inverse: #070708;
+  --inverse-text: #ffffff;
   --accent: #0f8f6a;
   --accent-ink: #07563f;
   --danger: #d91f2a;
@@ -39,6 +41,26 @@
   letter-spacing: 0;
 }
 
+.app-dark {
+  --ink: #f6f7f2;
+  --ink-soft: #ffffff;
+  --muted: #a9adb4;
+  --muted-strong: #d2d5da;
+  --line: rgba(246, 247, 242, 0.12);
+  --line-strong: rgba(246, 247, 242, 0.24);
+  --surface: #111315;
+  --surface-page: #08090a;
+  --surface-panel: #17191c;
+  --surface-raised: #1d2024;
+  --surface-inverse: #f6f7f2;
+  --inverse-text: #070708;
+  --accent: #3bd6a2;
+  --accent-ink: #68e3bb;
+  --shadow-soft: 0 18px 44px rgba(0, 0, 0, 0.38);
+  --shadow-strong: 0 24px 72px rgba(0, 0, 0, 0.54);
+  color-scheme: dark;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -52,6 +74,7 @@ body {
   margin: 0;
   min-width: 320px;
   background: var(--surface-page);
+  color: var(--ink);
 }
 
 button,
@@ -93,14 +116,15 @@ input:focus-visible,
 }
 
 .p-button:not(.p-button-text):not(.p-button-outlined):not(.p-button-secondary) {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: #fff;
+  border-color: var(--surface-inverse);
+  background: var(--surface-inverse);
+  color: var(--inverse-text);
 }
 
 .p-button:not(.p-button-text):not(.p-button-outlined):not(.p-button-secondary):enabled:hover {
   border-color: var(--ink-soft);
   background: var(--ink-soft);
+  color: var(--inverse-text);
 }
 
 .p-button.p-button-outlined {
@@ -114,7 +138,7 @@ input:focus-visible,
 .p-button.p-button-text:enabled:hover {
   border-color: var(--ink);
   color: var(--ink);
-  background: rgba(7, 7, 8, 0.06);
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
 }
 
 .p-button:disabled {
@@ -128,6 +152,10 @@ input:focus-visible,
   border-color: var(--line);
   color: var(--ink);
   background: var(--surface);
+}
+
+.p-inputtext::placeholder {
+  color: var(--muted);
 }
 
 .p-inputtext:enabled:focus {
@@ -197,13 +225,91 @@ input:focus-visible,
 .p-menu {
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
+  background: var(--surface);
   box-shadow: var(--shadow-soft);
 }
 
 .p-avatar {
-  background: var(--ink);
-  color: #fff;
+  background: var(--surface-inverse);
+  color: var(--inverse-text);
   font-weight: 850;
+}
+
+.preference-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-panel);
+}
+
+.preference-button {
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: 0;
+  border-radius: 999px;
+  padding-inline: var(--space-3);
+  color: var(--muted-strong);
+  background: transparent;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.preference-button:hover,
+.preference-button.active {
+  color: var(--inverse-text);
+  background: var(--surface-inverse);
+}
+
+.preference-button.icon-only {
+  padding-inline: 0;
+}
+
+.language-toggle {
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.drawer-preferences {
+  display: grid;
+  gap: var(--space-3);
+  margin-block-end: var(--space-4);
+  padding-block-end: var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.drawer-theme {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.drawer-theme > span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.drawer-theme .preference-controls {
+  justify-content: stretch;
+  border-radius: var(--radius-md);
+}
+
+.drawer-theme .preference-button {
+  flex: 1;
+  border-radius: var(--radius-sm);
+}
+
+.drawer-language {
+  width: 100%;
+  justify-content: flex-start;
+  border: 1px solid var(--line);
+  background: var(--surface-panel);
 }
 
 .eyebrow {
@@ -245,7 +351,7 @@ input:focus-visible,
   justify-items: start;
   width: min(100%, 48rem);
   padding-top: var(--space-6);
-  text-align: left;
+  text-align: start;
 }
 
 .hero-copy h1,
@@ -403,7 +509,7 @@ input:focus-visible,
   min-height: 14rem;
   padding: var(--space-8) 0 var(--space-5);
   color: var(--ink);
-  text-align: left;
+  text-align: start;
   background: transparent;
 }
 
@@ -616,8 +722,19 @@ input:focus-visible,
 }
 
 .showroom-tour .driver-popover-next-btn {
-  background: var(--ink);
-  color: #fff;
+  background: var(--surface-inverse);
+  color: var(--inverse-text);
+}
+
+.app-dark .showroom-tour.driver-popover {
+  background: var(--surface);
+}
+
+[dir="rtl"] .pi-arrow-right,
+[dir="rtl"] .pi-send,
+[dir="rtl"] .pi-sign-in,
+[dir="rtl"] .pi-chevron-down {
+  transform: scaleX(-1);
 }
 
 @media (min-width: 640px) {

@@ -20,7 +20,7 @@ export const environment = {
     fallbackLang: 'en'
   },
   googleMaps: {
-    apiKey: '',
+    apiKey: 'AIzaSyC0IHdnPJ42sJWE-8qRQ6XXa18Zj6-J92A',
     mapId: '',
     language: 'en',
     region: 'AE',

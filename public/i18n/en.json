@@ -112,5 +112,20 @@
   "validation": {
     "required": "This field is required.",
     "email": "Enter a valid email address."
+  },
+  "preferences": {
+    "title": "Display preferences",
+    "theme": {
+      "label": "Theme mode",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "language": {
+      "label": "Language",
+      "english": "English",
+      "arabic": "Arabic",
+      "toggle": "Switch language"
+    }
   }
 }

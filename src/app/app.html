@@ -1,2 +1,2 @@
 <router-outlet />
-<p-toast position="bottom-right" />
+<p-toast [position]="preferences.direction() === 'rtl' ? 'bottom-left' : 'bottom-right'" />

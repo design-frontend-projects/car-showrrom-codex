@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideTranslateService } from '@ngx-translate/core';
+import { GoogleMapsLoaderService } from '../../../core/maps/google-maps-loader.service';
 import { GoogleMapPicker } from './google-map-picker';
 import { MapLocationOverlay, MapRouteRequest } from './google-map-picker.models';
 
@@ -7,7 +8,17 @@ describe('GoogleMapPicker', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [GoogleMapPicker],
-      providers: [provideTranslateService({ fallbackLang: 'en', lang: 'en' })]
+      providers: [
+        provideTranslateService({ fallbackLang: 'en', lang: 'en' }),
+        {
+          provide: GoogleMapsLoaderService,
+          useValue: {
+            isBrowser: true,
+            hasApiKey: false,
+            load: vi.fn()
+          }
+        }
+      ]
     }).compileComponents();
   });
 

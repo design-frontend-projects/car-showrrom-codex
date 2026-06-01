@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { ToastModule } from 'primeng/toast';
+import { PreferenceService } from './core/preferences/preference.service';
 
 @Component({
   selector: 'app-root',
@@ -8,4 +9,6 @@ import { ToastModule } from 'primeng/toast';
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App {}
+export class App {
+  readonly preferences = inject(PreferenceService);
+}

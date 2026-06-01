@@ -14,6 +14,7 @@ import { environment } from '../environments/environment';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { httpLoggingInterceptor } from './core/interceptors/http-logging.interceptor';
 import { RouterLoggingService } from './core/logging/router-logging.service';
+import { PreferenceService } from './core/preferences/preference.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -44,6 +45,7 @@ export const appConfig: ApplicationConfig = {
     }),
     MessageService,
     provideAppInitializer(() => {
+      inject(PreferenceService).initialize();
       inject(RouterLoggingService).start();
     })
   ]

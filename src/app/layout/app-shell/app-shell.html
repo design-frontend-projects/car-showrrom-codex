@@ -17,6 +17,32 @@
     </nav>
 
     <div class="top-actions">
+      <div class="preference-controls" [attr.aria-label]="'preferences.theme.label' | translate">
+        @for (item of themeItems; track item.mode) {
+          <button
+            class="preference-button icon-only"
+            type="button"
+            [class.active]="preferences.themeMode() === item.mode"
+            [attr.aria-pressed]="preferences.themeMode() === item.mode"
+            [attr.aria-label]="item.labelKey | translate"
+            [title]="item.labelKey | translate"
+            (click)="setThemeMode(item.mode)"
+          >
+            <i [class]="item.icon"></i>
+          </button>
+        }
+      </div>
+
+      <button
+        class="preference-button language-toggle"
+        type="button"
+        [attr.aria-label]="'preferences.language.toggle' | translate"
+        [title]="'preferences.language.toggle' | translate"
+        (click)="preferences.toggleLanguage()"
+      >
+        <span>{{ preferences.language() === 'en' ? 'AR' : 'EN' }}</span>
+      </button>
+
       @if (!usesDesktopNavigation()) {
         <p-button icon="pi pi-bars" severity="secondary" [text]="true" class="menu-trigger" (onClick)="openDrawer()" />
       }
@@ -24,7 +50,36 @@
     </div>
   </header>
 
-  <p-drawer [visible]="drawerOpen() && !usesDesktopNavigation()" (visibleChange)="drawerOpen.set($event)" position="left" styleClass="mobile-drawer">
+  <p-drawer
+    [visible]="drawerOpen() && !usesDesktopNavigation()"
+    (visibleChange)="drawerOpen.set($event)"
+    [position]="preferences.direction() === 'rtl' ? 'right' : 'left'"
+    styleClass="mobile-drawer"
+  >
+    <div class="drawer-preferences" [attr.aria-label]="'preferences.title' | translate">
+      <div class="drawer-theme">
+        <span>{{ 'preferences.theme.label' | translate }}</span>
+        <div class="preference-controls">
+          @for (item of themeItems; track item.mode) {
+            <button
+              class="preference-button"
+              type="button"
+              [class.active]="preferences.themeMode() === item.mode"
+              [attr.aria-pressed]="preferences.themeMode() === item.mode"
+              (click)="setThemeMode(item.mode)"
+            >
+              <i [class]="item.icon"></i>
+              <span>{{ item.labelKey | translate }}</span>
+            </button>
+          }
+        </div>
+      </div>
+      <button class="preference-button drawer-language" type="button" (click)="preferences.toggleLanguage()">
+        <i class="pi pi-language"></i>
+        <span>{{ 'preferences.language.toggle' | translate }}</span>
+      </button>
+    </div>
+
     <nav class="drawer-nav" aria-label="Mobile">
       @for (item of navItems; track item.route) {
         <a [routerLink]="item.route" (click)="closeDrawer()">{{ item.labelKey | translate }}</a>

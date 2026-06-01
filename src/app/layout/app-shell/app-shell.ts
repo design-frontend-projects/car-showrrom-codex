@@ -11,6 +11,7 @@ import { MenuItem } from 'primeng/api';
 import { AuthFacade } from '../../core/auth/auth.facade';
 import { ResponsiveLayoutService } from '../../core/layout/responsive-layout.service';
 import { TourService } from '../../core/onboarding/tour.service';
+import { PreferenceService, ThemeMode } from '../../core/preferences/preference.service';
 import { RegisterForm } from '../../shared/components/register-form/register-form';
 import { RegisterRequest } from '../../core/auth/auth.models';
 
@@ -29,7 +30,6 @@ import { RegisterRequest } from '../../core/auth/auth.models';
     TranslatePipe
   ],
   templateUrl: './app-shell.html',
-  styleUrl: './app-shell.css',
   animations: [
     trigger('routeFade', [
       transition('* <=> *', [
@@ -45,6 +45,7 @@ import { RegisterRequest } from '../../core/auth/auth.models';
 export class AppShell implements AfterViewInit {
   readonly auth = inject(AuthFacade);
   readonly layout = inject(ResponsiveLayoutService);
+  readonly preferences = inject(PreferenceService);
   private readonly tours = inject(TourService);
   readonly registerOpen = signal(false);
   readonly drawerOpen = signal(false);
@@ -79,6 +80,12 @@ export class AppShell implements AfterViewInit {
     { labelKey: 'nav.contactUs', route: '/contact-us' }
   ];
 
+  readonly themeItems: { mode: ThemeMode; icon: string; labelKey: string }[] = [
+    { mode: 'light', icon: 'pi pi-sun', labelKey: 'preferences.theme.light' },
+    { mode: 'dark', icon: 'pi pi-moon', labelKey: 'preferences.theme.dark' },
+    { mode: 'system', icon: 'pi pi-desktop', labelKey: 'preferences.theme.system' }
+  ];
+
   ngAfterViewInit(): void {
     queueMicrotask(() => this.tours.startLandingTour());
   }
@@ -95,6 +102,10 @@ export class AppShell implements AfterViewInit {
 
   closeDrawer(): void {
     this.drawerOpen.set(false);
+  }
+
+  setThemeMode(themeMode: ThemeMode): void {
+    this.preferences.setThemeMode(themeMode);
   }
 
   prepareRoute(outlet: RouterOutlet): string {
