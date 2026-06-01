@@ -9,6 +9,7 @@ import { DrawerModule } from 'primeng/drawer';
 import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
 import { AuthFacade } from '../../core/auth/auth.facade';
+import { ResponsiveLayoutService } from '../../core/layout/responsive-layout.service';
 import { TourService } from '../../core/onboarding/tour.service';
 import { RegisterForm } from '../../shared/components/register-form/register-form';
 import { RegisterRequest } from '../../core/auth/auth.models';
@@ -43,9 +44,12 @@ import { RegisterRequest } from '../../core/auth/auth.models';
 })
 export class AppShell implements AfterViewInit {
   readonly auth = inject(AuthFacade);
+  readonly layout = inject(ResponsiveLayoutService);
   private readonly tours = inject(TourService);
   readonly registerOpen = signal(false);
   readonly drawerOpen = signal(false);
+  readonly usesDesktopNavigation = computed(() => this.layout.isDesktop());
+  readonly compactAuth = computed(() => !this.layout.isDesktop());
 
   readonly userInitials = computed(() => {
     const name = this.auth.user()?.displayName ?? 'Guest User';
@@ -81,6 +85,16 @@ export class AppShell implements AfterViewInit {
 
   register(request: RegisterRequest): void {
     this.auth.register(request);
+  }
+
+  openDrawer(): void {
+    if (!this.usesDesktopNavigation()) {
+      this.drawerOpen.set(true);
+    }
+  }
+
+  closeDrawer(): void {
+    this.drawerOpen.set(false);
   }
 
   prepareRoute(outlet: RouterOutlet): string {

@@ -3,7 +3,7 @@
   min-height: var(--map-height);
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 0;
+  border-radius: var(--radius-md);
   background: white;
   box-shadow: none;
 }
@@ -17,7 +17,7 @@
   padding: 1.5rem;
   color: var(--muted);
   text-align: center;
-  background: linear-gradient(135deg, #ffffff, #eeeeee);
+  background: var(--surface-panel);
 }
 
 .map-placeholder i {
@@ -50,7 +50,7 @@
   max-width: 36rem;
   padding: 0.45rem;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.94);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
   backdrop-filter: blur(18px);
@@ -77,7 +77,7 @@
   max-width: min(24rem, calc(100% - 1.5rem));
   padding: 0.75rem 0.9rem;
   border: 1px solid var(--line);
-  border-radius: 0;
+  border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.94);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
   backdrop-filter: blur(18px);
@@ -97,7 +97,6 @@
     grid-template-columns: auto minmax(0, 1fr);
     right: 0.5rem;
     left: 0.5rem;
-    border-radius: 1.4rem;
   }
 
   .map-search p-button {

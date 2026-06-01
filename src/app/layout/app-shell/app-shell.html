@@ -1,4 +1,4 @@
-<div class="shell">
+<div class="shell" [attr.data-layout]="layout.mode()" [class.shell-desktop]="usesDesktopNavigation()" [class.shell-compact]="compactAuth()">
   <header id="top-navigation" class="topbar">
     <a routerLink="/" class="brand" aria-label="Car showroom home">
       <span class="brand-mark">CS</span>
@@ -17,16 +17,19 @@
     </nav>
 
     <div class="top-actions">
-      <p-button icon="pi pi-bars" severity="secondary" [text]="true" class="menu-trigger" (onClick)="drawerOpen.set(true)" />
+      @if (!usesDesktopNavigation()) {
+        <p-button icon="pi pi-bars" severity="secondary" [text]="true" class="menu-trigger" (onClick)="openDrawer()" />
+      }
       <a routerLink="/admin" class="admin-link">{{ 'admin.title' | translate }}</a>
     </div>
   </header>
 
-  <p-drawer [visible]="drawerOpen()" (visibleChange)="drawerOpen.set($event)" position="left" styleClass="mobile-drawer">
+  <p-drawer [visible]="drawerOpen() && !usesDesktopNavigation()" (visibleChange)="drawerOpen.set($event)" position="left" styleClass="mobile-drawer">
     <nav class="drawer-nav" aria-label="Mobile">
       @for (item of navItems; track item.route) {
-        <a [routerLink]="item.route" (click)="drawerOpen.set(false)">{{ item.labelKey | translate }}</a>
+        <a [routerLink]="item.route" (click)="closeDrawer()">{{ item.labelKey | translate }}</a>
       }
+      <a routerLink="/admin" (click)="closeDrawer()">{{ 'admin.title' | translate }}</a>
     </nav>
   </p-drawer>
 

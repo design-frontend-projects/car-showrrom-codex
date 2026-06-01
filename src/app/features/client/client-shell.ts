@@ -1,6 +1,7 @@
-import { AfterViewInit, Component, inject } from '@angular/core';
+import { AfterViewInit, Component, computed, inject } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { CardModule } from 'primeng/card';
+import { ResponsiveLayoutService } from '../../core/layout/responsive-layout.service';
 import { TourService } from '../../core/onboarding/tour.service';
 
 @Component({
@@ -14,7 +15,7 @@ import { TourService } from '../../core/onboarding/tour.service';
         <p>{{ 'client.copy' | translate }}</p>
       </div>
 
-      <div class="metric-grid">
+      <div class="metric-grid" [attr.data-density]="metricDensity()">
         <p-card><strong>3</strong><span>{{ 'client.saved' | translate }}</span></p-card>
         <p-card><strong>1</strong><span>{{ 'client.listings' | translate }}</span></p-card>
         <p-card><strong>2</strong><span>{{ 'client.appointments' | translate }}</span></p-card>
@@ -24,6 +25,8 @@ import { TourService } from '../../core/onboarding/tour.service';
 })
 export class ClientShell implements AfterViewInit {
   private readonly tours = inject(TourService);
+  private readonly layout = inject(ResponsiveLayoutService);
+  readonly metricDensity = computed(() => (this.layout.isDesktop() ? 'dense' : this.layout.isTablet() ? 'medium' : 'compact'));
 
   ngAfterViewInit(): void {
     queueMicrotask(() => this.tours.startClientTour());

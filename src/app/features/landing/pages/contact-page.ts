@@ -1,8 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { ResponsiveLayoutService } from '../../../core/layout/responsive-layout.service';
 import { GoogleMapPicker } from '../../../shared/components/google-map-picker/google-map-picker';
 import { MapLocationOverlay, MapRouteRequest, MapRouteResult, MapSelectedLocation } from '../../../shared/components/google-map-picker/google-map-picker.models';
 
@@ -37,7 +38,7 @@ import { MapLocationOverlay, MapRouteRequest, MapRouteResult, MapSelectedLocatio
           [zoom]="10"
           [route]="demoRoute"
           routeColor="#0a0a0a"
-          height="420px"
+          [height]="mapHeight()"
           [showCurrentLocation]="true"
           (locationSelected)="selectedLocation.set($event)"
           (searchLocationSelected)="selectedLocation.set($event)"
@@ -65,9 +66,11 @@ import { MapLocationOverlay, MapRouteRequest, MapRouteResult, MapSelectedLocatio
   `
 })
 export class ContactPage {
+  private readonly layout = inject(ResponsiveLayoutService);
   readonly dubaiCenter: google.maps.LatLngLiteral = { lat: 25.2048, lng: 55.2708 };
   readonly selectedLocation = signal<MapSelectedLocation | null>(null);
   readonly routeSummary = signal<MapRouteResult | null>(null);
+  readonly mapHeight = computed(() => (this.layout.isMobile() ? '340px' : this.layout.isTablet() ? '380px' : '420px'));
 
   readonly showroomLocations: MapLocationOverlay[] = [
     {

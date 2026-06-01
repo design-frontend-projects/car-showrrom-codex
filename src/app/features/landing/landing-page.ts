@@ -1,8 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { ResponsiveLayoutService } from '../../core/layout/responsive-layout.service';
 import { UiSignalStore } from '../../state/ui-signal.store';
 import { formatCurrency, formatMileage } from '../../utils/number-format.util';
 
@@ -10,7 +11,7 @@ import { formatCurrency, formatMileage } from '../../utils/number-format.util';
   selector: 'app-landing-page',
   imports: [ButtonModule, InputTextModule, RouterLink, TranslatePipe],
   template: `
-    <section class="hero-band">
+    <section class="hero-band" [attr.data-density]="heroDensity()">
       <div class="hero-copy">
         <span class="eyebrow">{{ 'landing.kicker' | translate }}</span>
         <h1>{{ 'landing.title' | translate }}</h1>
@@ -39,7 +40,7 @@ import { formatCurrency, formatMileage } from '../../utils/number-format.util';
       </div>
     </section>
 
-    <section class="quick-grid" aria-label="Showroom categories">
+    <section class="quick-grid" [attr.data-density]="heroDensity()" aria-label="Showroom categories">
       <a routerLink="/used-cars">
         <i class="pi pi-history"></i>
         <strong>{{ 'nav.usedCars' | translate }}</strong>
@@ -65,6 +66,8 @@ import { formatCurrency, formatMileage } from '../../utils/number-format.util';
 })
 export class LandingPage {
   readonly ui = inject(UiSignalStore);
+  private readonly layout = inject(ResponsiveLayoutService);
+  readonly heroDensity = computed(() => (this.layout.isDesktop() ? 'full' : this.layout.isTablet() ? 'medium' : 'compact'));
   readonly price = formatCurrency;
   readonly mileage = formatMileage;
 }

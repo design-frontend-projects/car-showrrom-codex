@@ -25,8 +25,8 @@ const registerSchema = schema<RegisterFormModel>((path) => {
   selector: 'app-register-form',
   imports: [ButtonModule, FormsModule, InputTextModule, TranslatePipe],
   template: `
-    <form class="grid gap-3" (ngSubmit)="submitForm()">
-      <label class="grid gap-1 text-sm">
+    <form class="register-form" (ngSubmit)="submitForm()">
+      <label>
         <span>{{ 'auth.displayName' | translate }}</span>
         <input
           pInputText
@@ -37,7 +37,7 @@ const registerSchema = schema<RegisterFormModel>((path) => {
         />
       </label>
 
-      <label class="grid gap-1 text-sm">
+      <label>
         <span>{{ 'auth.email' | translate }}</span>
         <input
           pInputText
@@ -49,12 +49,12 @@ const registerSchema = schema<RegisterFormModel>((path) => {
         />
       </label>
 
-      <label class="grid gap-1 text-sm">
+      <label>
         <span>{{ 'auth.phone' | translate }}</span>
         <input pInputText name="phone" [ngModel]="model().phone" (ngModelChange)="update('phone', $event)" autocomplete="tel" />
       </label>
 
-      <label class="grid gap-1 text-sm">
+      <label>
         <span>{{ 'auth.password' | translate }}</span>
         <input
           pInputText

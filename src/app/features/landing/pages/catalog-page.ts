@@ -3,6 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { ResponsiveLayoutService } from '../../../core/layout/responsive-layout.service';
 import { formatCurrency, formatMileage } from '../../../utils/number-format.util';
 
 interface VehicleCard {
@@ -23,7 +24,7 @@ interface VehicleCard {
       <p>{{ copy() }}</p>
     </section>
 
-    <section class="vehicle-grid">
+    <section class="vehicle-grid" [attr.data-density]="cardDensity()">
       @for (vehicle of vehicles; track vehicle.name) {
         <p-card styleClass="vehicle-card">
           <ng-template #header>
@@ -46,10 +47,12 @@ interface VehicleCard {
 export class CatalogPage {
   private readonly route = inject(ActivatedRoute);
   private readonly translate = inject(TranslateService);
+  private readonly layout = inject(ResponsiveLayoutService);
 
   readonly pageKey = computed(() => this.route.snapshot.data['pageKey'] as 'usedCars' | 'newCars');
   readonly title = computed(() => this.translate.instant(`pages.${this.pageKey()}.title`));
   readonly copy = computed(() => this.translate.instant(`pages.${this.pageKey()}.copy`));
+  readonly cardDensity = computed(() => (this.layout.isDesktop() ? 'dense' : this.layout.isTablet() ? 'medium' : 'compact'));
   readonly price = formatCurrency;
   readonly mileage = formatMileage;
 
