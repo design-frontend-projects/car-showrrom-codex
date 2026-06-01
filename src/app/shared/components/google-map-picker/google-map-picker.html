@@ -1,0 +1,79 @@
+<section class="map-picker" [style.--map-height]="height()">
+  @if (status() === 'missing-key') {
+    <div class="map-placeholder">
+      <i class="pi pi-map-marker"></i>
+      <h2>{{ 'maps.missingKeyTitle' | translate }}</h2>
+      <p>{{ 'maps.missingKeyCopy' | translate }}</p>
+    </div>
+  } @else if (status() === 'loading') {
+    <div class="map-placeholder">
+      <i class="pi pi-spin pi-spinner"></i>
+      <h2>{{ 'maps.loading' | translate }}</h2>
+    </div>
+  } @else if (status() === 'error') {
+    <div class="map-placeholder">
+      <i class="pi pi-exclamation-triangle"></i>
+      <h2>{{ 'maps.errorTitle' | translate }}</h2>
+      <p>{{ errorMessage() }}</p>
+    </div>
+  } @else if (status() === 'ready') {
+    @if (searchEnabled()) {
+      <div class="map-search">
+        <i class="pi pi-search"></i>
+        <input #searchInput pInputText type="search" [placeholder]="'maps.searchPlaceholder' | translate" />
+        <p-button icon="pi pi-location-arrow" [text]="true" [rounded]="true" [title]="'maps.useCurrentLocation' | translate" (onClick)="locateUser()" />
+      </div>
+    }
+
+    <google-map
+      [height]="height()"
+      width="100%"
+      [center]="center()"
+      [zoom]="zoom()"
+      [options]="effectiveMapOptions()"
+      (mapInitialized)="onMapInitialized($event)"
+    >
+      @for (location of locations(); track location.id) {
+        <map-marker
+          #marker="mapMarker"
+          [position]="location.position"
+          [title]="location.title"
+          [icon]="markerIcon(location)"
+          (mapClick)="handleOverlaySelection(location, marker)"
+        />
+      }
+
+      @if (currentPosition(); as current) {
+        <map-marker [position]="current" [title]="'maps.currentLocation' | translate" />
+      }
+
+      @if (routePath().length > 0) {
+        <map-polyline [path]="routePath()" [options]="routeOptions()" />
+      }
+
+      <map-info-window>
+        @if (selectedOverlay(); as selected) {
+          <strong>{{ selected.title }}</strong>
+          @if (selected.subtitle) {
+            <p>{{ selected.subtitle }}</p>
+          }
+        }
+      </map-info-window>
+    </google-map>
+
+    @if (selectedLocation(); as selected) {
+      <div class="map-selection">
+        <span>{{ 'maps.selectedLocation' | translate }}</span>
+        <strong>{{ selected.title }}</strong>
+        @if (selected.address) {
+          <small>{{ selected.address }}</small>
+        }
+      </div>
+    }
+  } @else {
+    <div class="map-placeholder">
+      <i class="pi pi-map"></i>
+      <h2>{{ 'maps.idle' | translate }}</h2>
+    </div>
+  }
+</section>

@@ -1,6 +1,6 @@
 # Car Showroom
 
-Angular 22 RC SSR scaffold for a modular car showroom application. The stack uses PrimeNG, PrimeIcons, Tailwind CSS v4, NgRx Signal Store, Angular signal forms, ngx-translate, Driver.js, and Temporal utilities.
+Angular 22 RC SSR scaffold for a modular car showroom application. The stack uses PrimeNG, PrimeIcons, Tailwind CSS v4, NgRx Signal Store, Angular signal forms, ngx-translate, Driver.js, Google Maps, and Temporal utilities.
 
 ## Requirements
 

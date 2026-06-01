@@ -18,5 +18,12 @@ export const environment = {
   i18n: {
     defaultLang: 'en',
     fallbackLang: 'en'
+  },
+  googleMaps: {
+    apiKey: '',
+    mapId: '',
+    language: 'en',
+    region: 'AE',
+    libraries: ['maps', 'marker', 'places', 'routes', 'geocoding'] as const
   }
 } as const;

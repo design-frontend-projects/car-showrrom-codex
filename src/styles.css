@@ -211,6 +211,31 @@ input {
   background: white;
 }
 
+.map-demo {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.map-result {
+  display: grid;
+  gap: 0.25rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  background: white;
+  box-shadow: var(--shadow-soft);
+}
+
+.map-result span,
+.map-result small {
+  color: var(--muted);
+}
+
+.map-result strong {
+  color: var(--ink);
+}
+
 .metric-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }

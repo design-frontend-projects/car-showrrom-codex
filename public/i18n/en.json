@@ -78,6 +78,21 @@
     "message": "How can we help?",
     "send": "Send request"
   },
+  "maps": {
+    "currentLocation": "Current location",
+    "demoCopy": "Explore showroom branches, choose a location from search, or review the demo route between the sales and service teams.",
+    "demoKicker": "Showroom map",
+    "demoTitle": "Find the closest showroom touchpoint.",
+    "errorTitle": "Map unavailable",
+    "idle": "Map is waiting to load.",
+    "loading": "Loading map",
+    "missingKeyTitle": "Google Maps key required",
+    "missingKeyCopy": "Add a Google Maps API key to the active environment file to enable the interactive map. The app remains SSR-safe while the key is empty.",
+    "routeSummary": "Route summary",
+    "searchPlaceholder": "Search for a showroom, area, or landmark",
+    "selectedLocation": "Selected location",
+    "useCurrentLocation": "Use current location"
+  },
   "admin": {
     "kicker": "Operations",
     "title": "Admin Module",
