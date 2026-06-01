@@ -1,0 +1,74 @@
+<div class="shell">
+  <header id="top-navigation" class="topbar">
+    <a routerLink="/" class="brand" aria-label="Car showroom home">
+      <span class="brand-mark">CS</span>
+      <span class="brand-copy">
+        <strong>Car Showroom</strong>
+        <small>{{ 'landing.kicker' | translate }}</small>
+      </span>
+    </a>
+
+    <nav class="nav-links" aria-label="Primary">
+      @for (item of navItems; track item.route) {
+        <a [routerLink]="item.route" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          {{ item.labelKey | translate }}
+        </a>
+      }
+    </nav>
+
+    <div class="top-actions">
+      <p-button icon="pi pi-bars" severity="secondary" [text]="true" class="menu-trigger" (onClick)="drawerOpen.set(true)" />
+      <a routerLink="/admin" class="admin-link">{{ 'admin.title' | translate }}</a>
+    </div>
+  </header>
+
+  <p-drawer [visible]="drawerOpen()" (visibleChange)="drawerOpen.set($event)" position="left" styleClass="mobile-drawer">
+    <nav class="drawer-nav" aria-label="Mobile">
+      @for (item of navItems; track item.route) {
+        <a [routerLink]="item.route" (click)="drawerOpen.set(false)">{{ item.labelKey | translate }}</a>
+      }
+    </nav>
+  </p-drawer>
+
+  <aside id="auth-rail" class="auth-rail">
+    @if (auth.isAuthenticated()) {
+      <a routerLink="/client/sell" class="sell-card">
+        <i class="pi pi-car"></i>
+        <span>{{ 'sidebar.sellYourCar' | translate }}</span>
+      </a>
+
+      <p-menu #userMenu [model]="userMenuItems" [popup]="true" />
+      <button class="avatar-button" type="button" (click)="userMenu.toggle($event)" aria-label="Open user menu">
+        <p-avatar [label]="userInitials()" shape="circle" />
+        <span>{{ auth.user()?.displayName }}</span>
+        <i class="pi pi-chevron-down"></i>
+      </button>
+    } @else {
+      <div class="auth-card">
+        <span class="eyebrow">{{ 'auth.startSelling' | translate }}</span>
+        <h2>{{ 'auth.registerTitle' | translate }}</h2>
+        <p>{{ 'auth.registerCopy' | translate }}</p>
+        <p-button styleClass="w-full" [label]="'auth.register' | translate" icon="pi pi-user-plus" (onClick)="registerOpen.set(true)" />
+        <a routerLink="/client/sign-in" class="signin-link">
+          <i class="pi pi-sign-in"></i>
+          {{ 'auth.signIn' | translate }}
+        </a>
+      </div>
+    }
+  </aside>
+
+  <main class="content" [@routeFade]="prepareRoute(outlet)">
+    <router-outlet #outlet="outlet" />
+  </main>
+</div>
+
+<p-dialog
+  [header]="'auth.registerTitle' | translate"
+  [visible]="registerOpen()"
+  (visibleChange)="registerOpen.set($event)"
+  [modal]="true"
+  [draggable]="false"
+  [style]="{ width: 'min(92vw, 28rem)' }"
+>
+  <app-register-form (submitted)="register($event)" />
+</p-dialog>

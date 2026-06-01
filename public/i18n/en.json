@@ -1,0 +1,101 @@
+{
+  "nav": {
+    "usedCars": "Used Cars",
+    "newCars": "New Cars",
+    "services": "Services",
+    "rent": "Rent",
+    "aboutUs": "About Us",
+    "contactUs": "Contact Us"
+  },
+  "landing": {
+    "kicker": "Premium mobility showroom",
+    "title": "Find the right car with showroom-grade clarity.",
+    "subtitle": "Browse certified inventory, compare new arrivals, book services, or rent a premium vehicle from one streamlined workspace.",
+    "searchPlaceholder": "Search make, model, budget, or body type",
+    "search": "Search",
+    "featured": "Featured",
+    "price": "Price",
+    "mileage": "Mileage",
+    "status": "Status",
+    "usedCopy": "Certified pre-owned vehicles with transparent history.",
+    "newCopy": "Factory-fresh models ready for reservation.",
+    "servicesCopy": "Maintenance, inspection, detailing, and warranty support.",
+    "rentCopy": "Flexible premium rental options for short-term needs."
+  },
+  "sidebar": {
+    "sellYourCar": "Sell Your Car"
+  },
+  "auth": {
+    "startSelling": "Start selling",
+    "registerTitle": "Create your showroom account",
+    "registerCopy": "Register to list a car, save inventory, and manage appointments.",
+    "register": "Register",
+    "signIn": "Sign In",
+    "signInTitle": "Sign in to your account",
+    "signInCopy": "Use your showroom credentials to access profile, settings, and listings.",
+    "displayName": "Display name",
+    "email": "Email",
+    "phone": "Phone",
+    "password": "Password"
+  },
+  "catalog": {
+    "inventory": "Inventory",
+    "viewDetails": "View details"
+  },
+  "pages": {
+    "cta": "Contact the showroom",
+    "usedCars": {
+      "title": "Used cars with verified condition and history.",
+      "copy": "Inspect available pre-owned inventory with mileage, certification status, and showroom-backed support."
+    },
+    "newCars": {
+      "title": "New cars ready for reservation and delivery.",
+      "copy": "Explore latest model-year arrivals, trims, and launch offers with a clean purchase flow."
+    },
+    "services": {
+      "title": "Service programs for ownership confidence.",
+      "copy": "Book inspections, maintenance, detailing, warranty care, and delivery preparation.",
+      "items": ["Certified inspection lanes", "Service appointment routing", "Warranty and detailing support"]
+    },
+    "rent": {
+      "title": "Rent premium cars for flexible mobility.",
+      "copy": "Choose daily, weekly, or executive rentals from a curated showroom fleet.",
+      "items": ["Short-term premium rentals", "Business travel packages", "Delivery and pickup support"]
+    },
+    "aboutUs": {
+      "title": "A modern showroom for confident car decisions.",
+      "copy": "We combine inventory quality, transparent guidance, and operational discipline across every customer journey.",
+      "items": ["Curated vehicles", "Clear purchase support", "Long-term customer care"]
+    },
+    "contactUs": {
+      "title": "Talk to a showroom specialist.",
+      "copy": "Send your request and the team will route it to sales, service, rental, or listings support."
+    }
+  },
+  "contact": {
+    "name": "Name",
+    "email": "Email",
+    "message": "How can we help?",
+    "send": "Send request"
+  },
+  "admin": {
+    "kicker": "Operations",
+    "title": "Admin Module",
+    "copy": "A structured shell for inventory control, lead review, and listing operations.",
+    "inventory": "Active inventory",
+    "leads": "Open leads",
+    "pending": "Pending approvals"
+  },
+  "client": {
+    "kicker": "Customer workspace",
+    "title": "Client Module",
+    "copy": "A structured shell for profile, settings, saved vehicles, appointments, and listings.",
+    "saved": "Saved vehicles",
+    "listings": "My listings",
+    "appointments": "Appointments"
+  },
+  "validation": {
+    "required": "This field is required.",
+    "email": "Enter a valid email address."
+  }
+}
