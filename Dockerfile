@@ -6,6 +6,8 @@ RUN npm ci
 FROM deps AS build
 WORKDIR /app
 COPY . .
+ARG DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres?schema=showroom"
+ENV DATABASE_URL=$DATABASE_URL
 RUN npm run build:prod
 
 FROM node:24.15.0-alpine AS ssr

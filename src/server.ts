@@ -6,6 +6,7 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import { join } from 'node:path';
+import { checkDatabaseReady } from './server/db/prisma';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -14,6 +15,22 @@ const angularApp = new AngularNodeAppEngine();
 
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
+});
+
+app.get('/health/db', async (_req, res) => {
+  try {
+    await checkDatabaseReady();
+    res.status(200).json({ status: 'ok', database: 'ready' });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Database readiness check failed';
+
+    res.status(503).json({
+      status: 'error',
+      database: 'unavailable',
+      message,
+    });
+  }
 });
 
 /**

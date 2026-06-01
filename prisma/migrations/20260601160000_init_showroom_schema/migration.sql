@@ -1,0 +1,6 @@
+CREATE SCHEMA IF NOT EXISTS "showroom";
+
+CREATE TABLE IF NOT EXISTS "showroom"."database_health" (
+    "id" SERIAL PRIMARY KEY,
+    "checked_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

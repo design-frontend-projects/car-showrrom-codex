@@ -10,6 +10,9 @@
 /node_modules
 npm-debug.log
 yarn-error.log
+.env
+.env.*
+!.env.example
 
 # IDEs and editors
 .idea/
@@ -38,6 +41,7 @@ yarn-error.log
 testem.log
 /typings
 __screenshots__/
+/src/generated/prisma
 
 # System files
 .DS_Store

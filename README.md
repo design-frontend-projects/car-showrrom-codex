@@ -23,6 +23,37 @@ npx -p node@24.15.0 -p npm@11.6.2 npm run build
 - `npm run build:prod` builds with prod environment replacements and SSR output.
 - `npm test` runs unit tests.
 - `npm run serve:ssr:car-showroom` runs the built SSR server.
+- `npm run prisma:validate` validates the Prisma schema and config.
+- `npm run prisma:generate` generates the Prisma client into `src/generated/prisma`.
+- `npm run prisma:migrate:dev` applies local Prisma migrations.
+- `npm run prisma:setup` validates the Prisma schema and generates the client.
+- `npm run verify:prisma` validates Prisma and runs the production SSR build.
+
+## Database
+
+Prisma 7 is configured for PostgreSQL through `@prisma/adapter-pg`. Local development expects PostgreSQL at `localhost:5432`, database `postgres`, and schema `showroom`.
+
+Create a local `.env` from `.env.example` before running Prisma or SSR commands:
+
+```bash
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres?schema=showroom"
+```
+
+Prepare the local database and generated client:
+
+```bash
+npm run prisma:migrate:dev
+npm run prisma:generate
+```
+
+After building and starting the SSR server, check process and database readiness:
+
+```bash
+curl http://localhost:4000/health
+curl http://localhost:4000/health/db
+```
+
+When running the Docker Compose stack against PostgreSQL on the host machine, `docker-compose.yml` defaults `DATABASE_URL` to `host.docker.internal:5432`. Override `DATABASE_URL` in the shell if your database runs elsewhere.
 
 ## Architecture
 
@@ -31,6 +62,7 @@ npx -p node@24.15.0 -p npm@11.6.2 npm run build
 - `src/app/layout` contains the top nav, auth sidebar, mobile drawer, and route animation shell.
 - `src/app/state` contains NgRx Signal Store app/UI state.
 - `src/app/utils` contains reusable date, number, text, file, image, and signal-form helpers.
+- `src/server/db` contains server-only Prisma database access for the SSR Express server.
 - `public/i18n` contains ngx-translate JSON files.
 
 ## Deployment
