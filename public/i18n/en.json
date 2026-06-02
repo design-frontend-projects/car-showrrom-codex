@@ -191,6 +191,51 @@
     "listings": "My listings",
     "appointments": "Appointments"
   },
+  "profile": {
+    "kicker": "Account profile",
+    "errorTitle": "Profile unavailable",
+    "retry": "Retry",
+    "actions": {
+      "security": "Security",
+      "settings": "Settings",
+      "manageSecurity": "Manage security"
+    },
+    "sections": {
+      "contact": "Identity and contact",
+      "workspace": "Workspace access",
+      "security": "Security posture",
+      "timeline": "Account timeline"
+    },
+    "fields": {
+      "displayName": "Display name",
+      "email": "Email",
+      "phone": "Phone",
+      "tenant": "Tenant",
+      "tenantSlug": "Tenant slug",
+      "roles": "Roles",
+      "accountStatus": "Account status",
+      "twoFactor": "Two-factor authentication",
+      "securityAction": "Security action",
+      "lastLogin": "Last login",
+      "createdAt": "Created",
+      "updatedAt": "Updated"
+    },
+    "fallback": {
+      "notProvided": "Not provided",
+      "notAvailable": "Not available",
+      "noRoles": "No roles assigned"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "twoFactorEnabled": "2FA enabled",
+      "twoFactorRequired": "2FA required",
+      "twoFactorDisabled": "2FA not enabled"
+    },
+    "errors": {
+      "requestFailed": "We could not load your profile. Please try again."
+    }
+  },
   "validation": {
     "required": "This field is required.",
     "email": "Enter a valid email address."

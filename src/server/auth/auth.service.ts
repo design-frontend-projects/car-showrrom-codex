@@ -53,6 +53,26 @@ export interface AuthSessionDto {
   csrfToken?: string;
 }
 
+export interface CurrentProfileDto {
+  id: string;
+  displayName: string;
+  email: string;
+  phone: string | null;
+  avatarUrl: string | null;
+  isActive: boolean;
+  tenant: {
+    id: string;
+    slug: string;
+    name: string;
+  };
+  roles: string[];
+  twoFactorEnabled: boolean;
+  twoFactorRequired: boolean;
+  lastLoginAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AnonymousSessionDto {
   status: 'anonymous';
 }
@@ -185,6 +205,22 @@ export async function readSession(sessionToken: string | null): Promise<AuthSess
   const resolved = await resolveSession(sessionToken);
 
   return resolved?.dto ?? { status: 'anonymous' };
+}
+
+export async function readCurrentProfile(sessionToken: string | null): Promise<CurrentProfileDto> {
+  if (!sessionToken) {
+    throw new AuthHttpError(401, 'auth.error.unauthorized');
+  }
+
+  return withAuthDatabaseContext(async (tx) => {
+    const session = await loadSessionRecord(tx, sessionToken);
+
+    if (!session) {
+      throw new AuthHttpError(401, 'auth.error.unauthorized');
+    }
+
+    return mapProfile(session.user);
+  });
 }
 
 export async function refreshSession(sessionToken: string, metadata: RequestMetadata): Promise<CreatedSession> {
@@ -778,6 +814,28 @@ function mapUser(user: UserWithRoles): AuthUserDto {
     roles: user.roles.map(({ role }) => role.name),
     twoFactorEnabled: user.twoFactorEnabled,
     twoFactorRequired: user.twoFactorRequired,
+  };
+}
+
+function mapProfile(user: UserWithRoles): CurrentProfileDto {
+  return {
+    id: user.id,
+    displayName: user.displayName,
+    email: user.email,
+    phone: user.phone,
+    avatarUrl: user.avatarUrl,
+    isActive: user.isActive,
+    tenant: {
+      id: user.tenant.id,
+      slug: user.tenant.slug,
+      name: user.tenant.name,
+    },
+    roles: user.roles.map(({ role }) => role.name),
+    twoFactorEnabled: user.twoFactorEnabled,
+    twoFactorRequired: user.twoFactorRequired,
+    lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
+    createdAt: user.createdAt.toISOString(),
+    updatedAt: user.updatedAt.toISOString(),
   };
 }
 

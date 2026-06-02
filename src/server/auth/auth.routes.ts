@@ -8,6 +8,7 @@ import {
   completePasswordReset,
   disableTwoFactor,
   loginUser,
+  readCurrentProfile as readCurrentProfileService,
   readSession,
   refreshSession,
   regenerateBackupCodes,
@@ -40,7 +41,15 @@ import {
   setCsrfCookie,
 } from './cookie.service';
 
-export function registerAuthRoutes(app: Express): void {
+interface AuthRouteDependencies {
+  readCurrentProfile: typeof readCurrentProfileService;
+}
+
+const defaultAuthRouteDependencies: AuthRouteDependencies = {
+  readCurrentProfile: readCurrentProfileService,
+};
+
+export function registerAuthRoutes(app: Express, dependencies: AuthRouteDependencies = defaultAuthRouteDependencies): void {
   const router = Router();
 
   router.get('/csrf', (_request, response) => {
@@ -62,6 +71,9 @@ export function registerAuthRoutes(app: Express): void {
     const session = await readSession(readSessionCookie(request));
 
     response.status(200).json(session);
+  }));
+  router.get('/profile', asyncHandler(async (request, response) => {
+    response.status(200).json(await dependencies.readCurrentProfile(readSessionCookie(request)));
   }));
 
   router.post('/register', registerLimiter, asyncHandler(async (request, response) => {

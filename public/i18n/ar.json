@@ -203,6 +203,51 @@
     "listings": "قوائمي",
     "appointments": "المواعيد"
   },
+  "profile": {
+    "kicker": "الملف الشخصي للحساب",
+    "errorTitle": "الملف الشخصي غير متاح",
+    "retry": "إعادة المحاولة",
+    "actions": {
+      "security": "الأمان",
+      "settings": "الإعدادات",
+      "manageSecurity": "إدارة الأمان"
+    },
+    "sections": {
+      "contact": "الهوية والتواصل",
+      "workspace": "صلاحيات مساحة العمل",
+      "security": "حالة الأمان",
+      "timeline": "سجل الحساب"
+    },
+    "fields": {
+      "displayName": "اسم العرض",
+      "email": "البريد الإلكتروني",
+      "phone": "الهاتف",
+      "tenant": "المستأجر",
+      "tenantSlug": "معرف المستأجر",
+      "roles": "الأدوار",
+      "accountStatus": "حالة الحساب",
+      "twoFactor": "المصادقة الثنائية",
+      "securityAction": "إجراء الأمان",
+      "lastLogin": "آخر تسجيل دخول",
+      "createdAt": "تاريخ الإنشاء",
+      "updatedAt": "آخر تحديث"
+    },
+    "fallback": {
+      "notProvided": "غير متوفر",
+      "notAvailable": "غير متاح",
+      "noRoles": "لا توجد أدوار معينة"
+    },
+    "status": {
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "twoFactorEnabled": "المصادقة الثنائية مفعلة",
+      "twoFactorRequired": "المصادقة الثنائية مطلوبة",
+      "twoFactorDisabled": "المصادقة الثنائية غير مفعلة"
+    },
+    "errors": {
+      "requestFailed": "تعذر تحميل ملفك الشخصي. حاول مرة أخرى."
+    }
+  },
   "validation": {
     "required": "هذا الحقل مطلوب.",
     "email": "أدخل بريدا إلكترونيا صالحا."

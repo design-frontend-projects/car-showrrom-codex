@@ -10,7 +10,7 @@ export const clientRoutes: Routes = [
   {
     path: 'profile',
     canActivate: [authGuard],
-    loadComponent: () => import('./client-shell').then((m) => m.ClientShell),
+    loadComponent: () => import('./profile-page').then((m) => m.ProfilePage),
     data: { animation: 'profile' }
   },
   {

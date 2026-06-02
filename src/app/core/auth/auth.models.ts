@@ -20,6 +20,26 @@ export interface AuthSession {
   csrfToken?: string;
 }
 
+export interface CurrentProfile {
+  id: string;
+  displayName: string;
+  email: string;
+  phone: string | null;
+  avatarUrl: string | null;
+  isActive: boolean;
+  tenant: {
+    id: string;
+    slug: string;
+    name: string;
+  };
+  roles: readonly string[];
+  twoFactorEnabled: boolean;
+  twoFactorRequired: boolean;
+  lastLoginAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AnonymousSession {
   status: 'anonymous';
 }

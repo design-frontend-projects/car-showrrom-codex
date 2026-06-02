@@ -5,6 +5,7 @@ import {
   AuthResponse,
   AuthSession,
   BackupCodesResponse,
+  CurrentProfile,
   LoginRequest,
   RegisterRequest,
   ResetCompleteRequest,
@@ -35,6 +36,10 @@ export class AuthApiService {
 
   session(): Observable<AuthResponse> {
     return this.api.get<AuthResponse>('/auth/session');
+  }
+
+  profile(): Observable<CurrentProfile> {
+    return this.api.get<CurrentProfile>('/auth/profile');
   }
 
   refresh(): Observable<AuthSession> {
