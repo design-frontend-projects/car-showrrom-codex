@@ -19,7 +19,7 @@ const registerSchema = schema<RegisterFormModel>((path) => {
   required(path.email, { message: 'auth.validation.email.required' });
   email(path.email, { message: 'auth.validation.email.email' });
   required(path.password, { message: 'auth.validation.password.required' });
-  minLength(path.password, 12, { message: 'auth.validation.password.minLength' });
+  minLength(path.password, 8, { message: 'auth.validation.password.minLength' });
   pattern(path.password, /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/, {
     message: 'auth.validation.password.policy'
   });
@@ -92,7 +92,7 @@ export class RegisterForm {
     return (
       value.displayName.trim().length >= 2 &&
       value.email.includes('@') &&
-      value.password.length >= 12 &&
+      value.password.length >= 8 &&
       /[a-z]/.test(value.password) &&
       /[A-Z]/.test(value.password) &&
       /\d/.test(value.password) &&

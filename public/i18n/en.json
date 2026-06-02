@@ -87,7 +87,7 @@
       },
       "password": {
         "required": "Password is required.",
-        "minLength": "Use at least 12 characters.",
+        "minLength": "Use at least 8 characters.",
         "lowercase": "Include a lowercase letter.",
         "uppercase": "Include an uppercase letter.",
         "number": "Include a number.",

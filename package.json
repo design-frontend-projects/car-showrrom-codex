@@ -20,7 +20,8 @@
     "prebuild": "npm run prisma:generate",
     "prebuild:dev": "npm run prisma:generate",
     "prebuild:test": "npm run prisma:generate",
-    "prebuild:prod": "npm run prisma:generate"
+    "prebuild:prod": "npm run prisma:generate",
+    "prisma:studio": "prisma studio"
   },
   "private": true,
   "packageManager": "npm@11.6.2",

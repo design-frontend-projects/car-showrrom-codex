@@ -39,7 +39,7 @@ const resetSchema = schema<ResetModel>((path) => {
   required(path.email, { message: 'auth.validation.email.required' });
   email(path.email, { message: 'auth.validation.email.email' });
   pattern(path.otp, /^[0-9]{4,10}$/, { message: 'auth.validation.otp.format' });
-  minLength(path.password, 12, { message: 'auth.validation.password.minLength' });
+  minLength(path.password, 8, { message: 'auth.validation.password.minLength' });
 });
 
 @Component({
@@ -246,7 +246,7 @@ export class SignInPage {
   readonly canVerifyTwoFactor = computed(() => this.twoFactorModel().code.length >= 6 || this.twoFactorModel().backupCode.length >= 8);
   readonly canRequestReset = computed(() => this.resetModel().email.includes('@'));
   readonly canVerifyReset = computed(() => /^[0-9]{4,10}$/.test(this.resetModel().otp));
-  readonly canCompleteReset = computed(() => this.resetModel().password.length >= 12 && this.resetToken() !== null);
+  readonly canCompleteReset = computed(() => this.resetModel().password.length >= 8 && this.resetToken() !== null);
 
   updateLogin(field: keyof LoginModel, value: string | boolean): void {
     this.loginModel.update((current) => ({ ...current, [field]: value }));
