@@ -2,7 +2,6 @@
 
 ## Purpose
 Define the server API boundary and Angular client-state contract for consuming tenant-scoped RBAC data without exposing server-only database dependencies to browser code.
-
 ## Requirements
 ### Requirement: Server-only RBAC API boundary
 The system SHALL expose RBAC data to Angular through server-side API routes while keeping Prisma and PostgreSQL imports isolated to `src/server/**`.
@@ -132,3 +131,22 @@ The system SHALL keep RBAC services and stores consistent when auth session expi
 #### Scenario: Forbidden tenant access
 - **WHEN** an authenticated user requests a tenant they cannot access
 - **THEN** the RBAC store records a forbidden error while preserving unrelated loaded data
+
+### Requirement: Showroom authorization state
+Angular client and admin routes SHALL use authenticated session and RBAC state to determine whether listing management and request review actions are available.
+
+#### Scenario: Client menu visibility
+- **WHEN** a logged-in client has listing-management permission
+- **THEN** the app shell and client area expose sell/manage listing navigation
+
+#### Scenario: Admin menu visibility
+- **WHEN** a logged-in user lacks request-review permission
+- **THEN** the app MUST NOT show administrative request review navigation
+
+### Requirement: API authorization errors
+Showroom Angular services SHALL surface server authorization failures as stable localized UI states.
+
+#### Scenario: Permission denied response
+- **WHEN** a showroom API returns an authorization error
+- **THEN** the UI displays a localized access-denied state and does not continue optimistic updates
+

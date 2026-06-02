@@ -7,7 +7,7 @@
 - [x] 1.5 Add a PostgreSQL migration trigger/function that enforces the five-active-listing limit per client and tenant.
 - [x] 1.6 Add showroom RBAC actions and default role mappings for client listing management, image upload, vehicle request submission, and admin request review.
 - [x] 1.7 Run and fix `npm run prisma:validate` after schema changes.
-- [ ] 1.8 Generate and inspect the Prisma migration with `npm run prisma:migrate:dev`.
+- [x] 1.8 Generate and inspect the Prisma migration with `npm run prisma:migrate:dev`.
 - [x] 1.9 Run `npm run prisma:generate` and update server imports to use the regenerated client.
 
 ## 2. Server Showroom Foundation
