@@ -7,5 +7,13 @@ export const authGuard: CanActivateFn = () => {
   const auth = inject(AuthFacade);
   const router = inject(Router);
 
-  return auth.isAuthenticated() ? true : router.parseUrl(environment.auth.unauthorizedRedirect);
+  if (auth.isAuthenticated()) {
+    return true;
+  }
+
+  if (auth.requiresTwoFactor()) {
+    return router.parseUrl('/client/sign-in?step=2fa');
+  }
+
+  return router.parseUrl(environment.auth.unauthorizedRedirect);
 };

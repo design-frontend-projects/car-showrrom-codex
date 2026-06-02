@@ -12,6 +12,7 @@ import { MessageService } from 'primeng/api';
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
+import { AuthSignalStore } from './core/auth/auth.store';
 import { httpLoggingInterceptor } from './core/interceptors/http-logging.interceptor';
 import { RouterLoggingService } from './core/logging/router-logging.service';
 import { PreferenceService } from './core/preferences/preference.service';
@@ -47,6 +48,7 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => {
       inject(PreferenceService).initialize();
       inject(RouterLoggingService).start();
+      void inject(AuthSignalStore).loadSession();
     })
   ]
 };

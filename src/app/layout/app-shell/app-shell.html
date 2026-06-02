@@ -85,6 +85,18 @@
         <a [routerLink]="item.route" (click)="closeDrawer()">{{ item.labelKey | translate }}</a>
       }
       <a routerLink="/admin" (click)="closeDrawer()">{{ 'admin.title' | translate }}</a>
+      @if (auth.isAuthenticated()) {
+        <a routerLink="/client/profile" (click)="closeDrawer()">{{ 'auth.account.profile' | translate }}</a>
+        <a routerLink="/client/security" (click)="closeDrawer()">{{ 'auth.account.security' | translate }}</a>
+        <button class="drawer-action" type="button" (click)="auth.logoutLocal(); closeDrawer()">
+          <i class="pi pi-sign-out"></i>
+          <span>{{ 'auth.signOut.local' | translate }}</span>
+        </button>
+        <button class="drawer-action" type="button" (click)="auth.logoutGlobal(); closeDrawer()">
+          <i class="pi pi-power-off"></i>
+          <span>{{ 'auth.signOut.global' | translate }}</span>
+        </button>
+      }
     </nav>
   </p-drawer>
 
@@ -95,7 +107,7 @@
         <span>{{ 'sidebar.sellYourCar' | translate }}</span>
       </a>
 
-      <p-menu #userMenu [model]="userMenuItems" [popup]="true" />
+      <p-menu #userMenu [model]="userMenuItems()" [popup]="true" />
       <button class="avatar-button" type="button" (click)="userMenu.toggle($event)" aria-label="Open user menu">
         <p-avatar [label]="userInitials()" shape="circle" />
         <span>{{ auth.user()?.displayName }}</span>

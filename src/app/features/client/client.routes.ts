@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { authGuard } from '../../core/auth/auth.guard';
 
 export const clientRoutes: Routes = [
   {
@@ -8,21 +9,31 @@ export const clientRoutes: Routes = [
   },
   {
     path: 'profile',
+    canActivate: [authGuard],
     loadComponent: () => import('./client-shell').then((m) => m.ClientShell),
     data: { animation: 'profile' }
   },
   {
     path: 'settings',
+    canActivate: [authGuard],
     loadComponent: () => import('./client-shell').then((m) => m.ClientShell),
     data: { animation: 'settings' }
   },
   {
+    path: 'security',
+    canActivate: [authGuard],
+    loadComponent: () => import('./two-factor-page').then((m) => m.TwoFactorPage),
+    data: { animation: 'security' }
+  },
+  {
     path: 'my-listings',
+    canActivate: [authGuard],
     loadComponent: () => import('./client-shell').then((m) => m.ClientShell),
     data: { animation: 'my-listings' }
   },
   {
     path: 'sell',
+    canActivate: [authGuard],
     loadComponent: () => import('./client-shell').then((m) => m.ClientShell),
     data: { animation: 'sell' }
   },

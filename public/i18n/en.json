@@ -33,10 +33,92 @@
     "signIn": "Sign In",
     "signInTitle": "Sign in to your account",
     "signInCopy": "Use your showroom credentials to access profile, settings, and listings.",
+    "rememberMe": "Keep me signed in",
+    "backToSignIn": "Back to sign in",
     "displayName": "Display name",
     "email": "Email",
     "phone": "Phone",
-    "password": "Password"
+    "password": "Password",
+    "account": {
+      "profile": "Profile",
+      "security": "Security",
+      "settings": "Settings",
+      "myListings": "My listings"
+    },
+    "signOut": {
+      "local": "Sign out",
+      "global": "Sign out everywhere"
+    },
+    "reset": {
+      "start": "Forgot password?",
+      "title": "Reset your password",
+      "copy": "Request a demo OTP, verify it, and choose a new password.",
+      "request": "Send demo OTP",
+      "otp": "Demo OTP",
+      "verify": "Verify OTP",
+      "newPassword": "New password",
+      "complete": "Set new password",
+      "demoOtp": "Demo OTP: {{ code }}"
+    },
+    "twoFactor": {
+      "eyebrow": "Account security",
+      "title": "Two-factor verification",
+      "copy": "Enter your authenticator code or a backup code to finish sign in.",
+      "settingsTitle": "Two-factor authentication",
+      "settingsCopy": "Use an authenticator app and backup codes to protect your account.",
+      "requiredSetup": "Two-factor authentication is required before this account can continue.",
+      "startSetup": "Start setup",
+      "qrAlt": "Authenticator setup QR code",
+      "code": "Authenticator code",
+      "backupCode": "Backup code",
+      "verify": "Verify",
+      "enable": "Enable 2FA",
+      "disable": "Disable 2FA",
+      "regenerateBackupCodes": "Regenerate backup codes",
+      "backupCodesTitle": "Store these backup codes safely"
+    },
+    "validation": {
+      "displayName": {
+        "required": "Display name is required."
+      },
+      "email": {
+        "required": "Email is required.",
+        "email": "Enter a valid email address."
+      },
+      "password": {
+        "required": "Password is required.",
+        "minLength": "Use at least 12 characters.",
+        "lowercase": "Include a lowercase letter.",
+        "uppercase": "Include an uppercase letter.",
+        "number": "Include a number.",
+        "symbol": "Include a symbol.",
+        "policy": "Use uppercase, lowercase, number, and symbol characters."
+      },
+      "otp": {
+        "format": "Enter the numeric code from your authenticator or reset message."
+      },
+      "backupCode": {
+        "minLength": "Enter a valid backup code."
+      }
+    },
+    "error": {
+      "validation": "Check the highlighted fields.",
+      "requestFailed": "Authentication request failed.",
+      "invalidTenant": "The selected tenant is invalid.",
+      "emailTaken": "That email is already registered.",
+      "invalidCredentials": "Email or password is incorrect.",
+      "unauthorized": "Please sign in again.",
+      "csrf": "Security check failed. Refresh and try again.",
+      "rateLimited": "Too many attempts. Try again later.",
+      "otpExpired": "The OTP has expired. Request a new one.",
+      "otpAttemptsExceeded": "Too many OTP attempts. Request a new one.",
+      "otpMismatch": "The OTP does not match.",
+      "resetTokenInvalid": "The reset session is invalid or expired.",
+      "userNotFound": "User was not found.",
+      "twoFactorMismatch": "The two-factor code does not match.",
+      "twoFactorChallengeInvalid": "The two-factor challenge expired. Sign in again.",
+      "twoFactorSetupMissing": "Start two-factor setup before verifying."
+    }
   },
   "catalog": {
     "inventory": "Inventory",

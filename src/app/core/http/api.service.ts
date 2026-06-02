@@ -12,31 +12,31 @@ export class ApiService {
   get<T>(url: string): Observable<T>;
   get<T>(url: string, params: QueryParams): Observable<T>;
   get<T>(url: string, params?: QueryParams): Observable<T> {
-    return this.http.get<T>(this.buildUrl(url), { params: normalizeParams(params) });
+    return this.http.get<T>(this.buildUrl(url), { params: normalizeParams(params), withCredentials: true });
   }
 
   post<T>(url: string, body: unknown): Observable<T>;
   post<T>(url: string, body: unknown, params: QueryParams): Observable<T>;
   post<T>(url: string, body: unknown, params?: QueryParams): Observable<T> {
-    return this.http.post<T>(this.buildUrl(url), body, { params: normalizeParams(params) });
+    return this.http.post<T>(this.buildUrl(url), body, { params: normalizeParams(params), withCredentials: true });
   }
 
   put<T>(url: string, body: unknown): Observable<T>;
   put<T>(url: string, body: unknown, params: QueryParams): Observable<T>;
   put<T>(url: string, body: unknown, params?: QueryParams): Observable<T> {
-    return this.http.put<T>(this.buildUrl(url), body, { params: normalizeParams(params) });
+    return this.http.put<T>(this.buildUrl(url), body, { params: normalizeParams(params), withCredentials: true });
   }
 
   patch<T>(url: string, body: unknown): Observable<T>;
   patch<T>(url: string, body: unknown, params: QueryParams): Observable<T>;
   patch<T>(url: string, body: unknown, params?: QueryParams): Observable<T> {
-    return this.http.patch<T>(this.buildUrl(url), body, { params: normalizeParams(params) });
+    return this.http.patch<T>(this.buildUrl(url), body, { params: normalizeParams(params), withCredentials: true });
   }
 
   delete<T>(url: string): Observable<T>;
   delete<T>(url: string, params: QueryParams): Observable<T>;
   delete<T>(url: string, params?: QueryParams): Observable<T> {
-    return this.http.delete<T>(this.buildUrl(url), { params: normalizeParams(params) });
+    return this.http.delete<T>(this.buildUrl(url), { params: normalizeParams(params), withCredentials: true });
   }
 
   private buildUrl(url: string): string {

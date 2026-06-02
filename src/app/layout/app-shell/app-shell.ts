@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, computed, inject, signal } from '@angular/core';
 import { animate, query, style, transition, trigger } from '@angular/animations';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { AvatarModule } from 'primeng/avatar';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -46,6 +46,7 @@ export class AppShell implements AfterViewInit {
   readonly auth = inject(AuthFacade);
   readonly layout = inject(ResponsiveLayoutService);
   readonly preferences = inject(PreferenceService);
+  private readonly translate = inject(TranslateService);
   private readonly tours = inject(TourService);
   readonly registerOpen = signal(false);
   readonly drawerOpen = signal(false);
@@ -63,13 +64,15 @@ export class AppShell implements AfterViewInit {
       .toUpperCase();
   });
 
-  readonly userMenuItems: MenuItem[] = [
-    { label: 'Profile', icon: 'pi pi-user', routerLink: '/client/profile' },
-    { label: 'Settings', icon: 'pi pi-cog', routerLink: '/client/settings' },
-    { label: 'My Listings', icon: 'pi pi-list', routerLink: '/client/my-listings' },
+  readonly userMenuItems = computed<MenuItem[]>(() => [
+    { label: this.t('auth.account.profile'), icon: 'pi pi-user', routerLink: '/client/profile' },
+    { label: this.t('auth.account.security'), icon: 'pi pi-shield', routerLink: '/client/security' },
+    { label: this.t('auth.account.settings'), icon: 'pi pi-cog', routerLink: '/client/settings' },
+    { label: this.t('auth.account.myListings'), icon: 'pi pi-list', routerLink: '/client/my-listings' },
     { separator: true },
-    { label: 'Sign out', icon: 'pi pi-sign-out', command: () => this.auth.signOut() }
-  ];
+    { label: this.t('auth.signOut.local'), icon: 'pi pi-sign-out', command: () => this.auth.logoutLocal() },
+    { label: this.t('auth.signOut.global'), icon: 'pi pi-power-off', command: () => this.auth.logoutGlobal() }
+  ]);
 
   readonly navItems = [
     { labelKey: 'nav.usedCars', route: '/used-cars' },
@@ -90,8 +93,12 @@ export class AppShell implements AfterViewInit {
     queueMicrotask(() => this.tours.startLandingTour());
   }
 
-  register(request: RegisterRequest): void {
-    this.auth.register(request);
+  async register(request: RegisterRequest): Promise<void> {
+    await this.auth.register(request);
+
+    if (this.auth.isAuthenticated()) {
+      this.registerOpen.set(false);
+    }
   }
 
   openDrawer(): void {
@@ -110,5 +117,10 @@ export class AppShell implements AfterViewInit {
 
   prepareRoute(outlet: RouterOutlet): string {
     return outlet?.activatedRouteData?.['animation'] ?? 'root';
+  }
+
+  private t(key: string): string {
+    this.preferences.language();
+    return this.translate.instant(key);
   }
 }

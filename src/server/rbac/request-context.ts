@@ -1,4 +1,5 @@
 import type { Request } from 'express';
+import { resolveSessionUserId } from '../auth/auth.service';
 import { withRbacDatabaseContext } from './db-context';
 
 export const TENANT_CONTEXT_HEADER = 'x-tenant-id';
@@ -22,7 +23,7 @@ export class HttpError extends Error {
 
 export async function requireRbacRequestContext(request: Request): Promise<RbacRequestContext> {
   const tenantId = readTenantId(request);
-  const userId = readAuthenticatedUserId(request);
+  const userId = await readAuthenticatedUserId(request);
 
   if (!userId) {
     throw new HttpError(401, 'An authenticated RBAC user is required.');
@@ -75,7 +76,13 @@ export function assertUuid(value: string, label: string): void {
   }
 }
 
-function readAuthenticatedUserId(request: Request): string | null {
+async function readAuthenticatedUserId(request: Request): Promise<string | null> {
+  const sessionUserId = await resolveSessionUserId(request);
+
+  if (sessionUserId) {
+    return sessionUserId;
+  }
+
   const authorization = request.header('authorization');
 
   if (!authorization?.startsWith('Bearer ')) {

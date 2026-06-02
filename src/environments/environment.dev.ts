@@ -1,10 +1,9 @@
 export const environment = {
   name: 'dev',
   production: false,
-  apiBaseUrl: 'https://dev-api.example.com',
+  apiBaseUrl: '/api',
   auth: {
-    tokenStorageKey: 'car-showroom.dev.access-token',
-    refreshTokenStorageKey: 'car-showroom.dev.refresh-token',
+    csrfCookieName: 'cs_csrf',
     tenantStorageKey: 'car-showroom.dev.tenant-id',
     unauthorizedRedirect: '/client/sign-in',
   },

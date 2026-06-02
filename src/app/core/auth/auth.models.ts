@@ -1,23 +1,46 @@
-export type AuthStatus = 'anonymous' | 'pending' | 'authenticated' | 'failed';
+export type AuthStatus = 'anonymous' | 'pending' | 'authenticated' | 'twoFactorRequired' | 'failed';
 
 export interface AuthUser {
   id: string;
+  tenantId: string;
+  tenantSlug: string;
   displayName: string;
   email: string;
-  avatarUrl?: string;
+  phone: string | null;
+  avatarUrl: string | null;
   roles: readonly string[];
+  twoFactorEnabled: boolean;
+  twoFactorRequired: boolean;
 }
 
 export interface AuthSession {
-  accessToken: string;
-  refreshToken?: string;
+  status: 'authenticated';
   user: AuthUser;
-  expiresAt?: string;
+  expiresAt: string;
+  csrfToken?: string;
 }
+
+export interface AnonymousSession {
+  status: 'anonymous';
+}
+
+export interface TwoFactorChallenge {
+  status: 'twoFactorRequired';
+  challengeToken: string;
+  setupRequired: boolean;
+  user: {
+    email: string;
+    displayName: string;
+    twoFactorRequired: boolean;
+  };
+}
+
+export type AuthResponse = AuthSession | AnonymousSession | TwoFactorChallenge;
 
 export interface LoginRequest {
   email: string;
   password: string;
+  remember?: boolean;
 }
 
 export interface RegisterRequest {
@@ -25,10 +48,58 @@ export interface RegisterRequest {
   email: string;
   phone?: string;
   password: string;
+  remember?: boolean;
+}
+
+export interface ResetRequest {
+  email: string;
+}
+
+export interface ResetVerifyRequest {
+  email: string;
+  otp: string;
+}
+
+export interface ResetVerifyResponse {
+  resetToken: string;
+  expiresAt: string;
+}
+
+export interface ResetCompleteRequest {
+  resetToken: string;
+  password: string;
+}
+
+export interface TwoFactorEnableRequest {
+  challengeToken?: string;
+}
+
+export interface TwoFactorSetupResponse {
+  otpauthUrl: string;
+  qrCodeDataUrl: string;
+}
+
+export interface TwoFactorVerifyRequest {
+  challengeToken?: string;
+  code?: string;
+  backupCode?: string;
+}
+
+export interface TwoFactorDisableRequest {
+  password: string;
+  code?: string;
+  backupCode?: string;
+}
+
+export interface BackupCodesResponse {
+  backupCodes: string[];
 }
 
 export interface AuthState {
   status: AuthStatus;
   session: AuthSession | null;
+  challenge: TwoFactorChallenge | null;
   error: string | null;
+  fieldErrors: Record<string, string>;
+  csrfToken: string | null;
 }

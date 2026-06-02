@@ -75,7 +75,89 @@ When running the Docker Compose stack against PostgreSQL on the host machine, `d
 - `src/app/state` contains NgRx Signal Store app/UI state.
 - `src/app/utils` contains reusable date, number, text, file, image, and signal-form helpers.
 - `src/server/db` contains server-only Prisma database access for the SSR Express server.
+- `src/server/auth` contains server-only registration, login, sessions, CSRF, reset OTP, TOTP, backup-code, password hashing, encryption, and validation code.
 - `public/i18n` contains ngx-translate JSON files.
+
+```text
+Browser/Angular signal forms
+  -> same-origin /api/auth requests with cookies + CSRF
+  -> Express SSR auth routes in src/server/auth
+  -> Prisma server client in src/server/db
+  -> PostgreSQL showroom schema
+```
+
+Auth state is exposed to Angular through `AuthSignalStore`. The browser stores no access or refresh tokens; session state is read from the server with an HttpOnly session cookie, and user-facing state is a sanitized DTO.
+
+## Authentication
+
+The auth system uses server-owned sessions for SSR. Login and registration set an opaque session cookie (`HttpOnly`, `Secure` in production, configurable `SameSite`) and a readable CSRF cookie used by Angular for mutating same-origin requests. Passwords are hashed with the configured bcrypt fallback, reset OTPs and backup codes are hashed before storage, and TOTP secrets are encrypted at rest.
+
+### API
+
+- `GET /api/auth/csrf` issues a CSRF token cookie for browser mutations.
+- `GET /api/auth/session` and `GET /api/auth/me` return `authenticated` or `anonymous` session state.
+- `POST /api/auth/register` creates a user in the canonical Prisma `User` model and starts a session.
+- `POST /api/auth/login` validates credentials and either starts a session or returns a 2FA challenge.
+- `POST /api/auth/refresh` rotates or extends the current session.
+- `POST /api/auth/logout` revokes the current session.
+- `POST /api/auth/logout-all` revokes all sessions for the user.
+- `POST /api/auth/reset-request` generates a demo numeric OTP for an existing account and stores only a hash.
+- `POST /api/auth/reset-verify` verifies the OTP and returns a short-lived reset transaction token.
+- `POST /api/auth/reset-complete` validates the transaction and stores a newly hashed password.
+- `POST /api/auth/2fa-enable` creates encrypted pending TOTP setup data and returns QR setup data.
+- `POST /api/auth/2fa-verify` verifies setup or login challenges and issues backup codes or a session.
+- `POST /api/auth/2fa-disable` disables 2FA after password plus TOTP/backup-code verification.
+- `POST /api/auth/2fa-backup-codes/regenerate` replaces backup codes after password plus 2FA verification.
+
+### Environment
+
+Copy `.env.example` and set production-grade values for:
+
+- `DATABASE_URL`
+- `AUTH_SESSION_COOKIE_NAME`, `AUTH_CSRF_COOKIE_NAME`, `AUTH_COOKIE_DOMAIN`, `AUTH_COOKIE_SECURE`, `AUTH_COOKIE_SAME_SITE`
+- `AUTH_SESSION_SECRET`, `AUTH_CSRF_SECRET`, `AUTH_ENCRYPTION_KEY`
+- `AUTH_SESSION_TTL_MINUTES`, `AUTH_SESSION_REMEMBER_TTL_DAYS`, `AUTH_SESSION_ROTATE_AFTER_MINUTES`
+- `AUTH_PASSWORD_HASH_ROUNDS`, `AUTH_PASSWORD_MIN_LENGTH`
+- `AUTH_RESET_OTP_DIGITS`, `AUTH_RESET_OTP_TTL_MINUTES`, `AUTH_RESET_OTP_MAX_ATTEMPTS`, `AUTH_RESET_TRANSACTION_TTL_MINUTES`
+- `AUTH_RATE_LIMIT_WINDOW_MINUTES`, `AUTH_LOGIN_RATE_LIMIT_MAX`, `AUTH_REGISTER_RATE_LIMIT_MAX`, `AUTH_RESET_RATE_LIMIT_MAX`, `AUTH_2FA_RATE_LIMIT_MAX`
+- `AUTH_TOTP_ISSUER`, `AUTH_TOTP_WINDOW`, `AUTH_BACKUP_CODE_COUNT`, `AUTH_DEFAULT_TENANT_SLUG`
+
+Generate high-entropy secrets with:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+```
+
+### Migration
+
+Apply auth schema changes locally:
+
+```bash
+npm run prisma:validate
+npm run prisma:migrate:dev
+npm run prisma:generate
+```
+
+The auth migration adds nullable user lifecycle fields and creates `auth_sessions`, `password_reset_otps`, and `user_backup_codes`. Existing RBAC tenant uniqueness and cascade behavior are preserved.
+
+### Security Checklist
+
+- Serve production over HTTPS and set `AUTH_COOKIE_SECURE=true`.
+- Use long random values for all auth secrets and keep them out of browser bundles.
+- Keep `DATABASE_URL` and Prisma imports under `src/server/**`.
+- Rotate `AUTH_ENCRYPTION_KEY` only with a planned TOTP re-enrollment or encrypted-secret migration.
+- Monitor rate-limit responses on login, reset, and 2FA endpoints.
+- Confirm backup codes and reset OTPs are never logged in production.
+- Run Prisma migrations before rolling out SSR containers that depend on new auth models.
+- Revoke active sessions after password reset or suspected compromise.
+
+### CI Suggestions
+
+- `npm run prisma:validate`
+- `npm run prisma:generate`
+- `npm test -- --watch=false`
+- `npm run build:prod`
+- Apply migrations against a disposable PostgreSQL database or isolated test schema.
 
 ## Deployment
 

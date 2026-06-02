@@ -30,25 +30,94 @@ model Tenant {
 }
 
 model User {
-  id           String     @id @default(uuid()) @db.Uuid
-  tenantId     String     @map("tenant_id") @db.Uuid
-  email        String
-  displayName  String     @map("display_name")
-  passwordHash String     @map("password_hash")
-  phone        String?
-  avatarUrl    String?    @map("avatar_url")
-  isActive     Boolean    @default(true) @map("is_active")
-  lastLoginAt  DateTime?  @map("last_login_at")
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
-  tenant       Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  roles        UserRole[]
+  id                              String             @id @default(uuid()) @db.Uuid
+  tenantId                        String             @map("tenant_id") @db.Uuid
+  email                           String
+  displayName                     String             @map("display_name")
+  passwordHash                    String             @map("password_hash")
+  phone                           String?
+  avatarUrl                       String?            @map("avatar_url")
+  isActive                        Boolean            @default(true) @map("is_active")
+  emailVerifiedAt                 DateTime?          @map("email_verified_at")
+  passwordChangedAt               DateTime?          @map("password_changed_at")
+  twoFactorEnabled                Boolean            @default(false) @map("two_factor_enabled")
+  twoFactorRequired               Boolean            @default(false) @map("two_factor_required")
+  twoFactorSecretEncrypted        String?            @map("two_factor_secret_encrypted") @db.Text
+  twoFactorPendingSecretEncrypted String?            @map("two_factor_pending_secret_encrypted") @db.Text
+  twoFactorVerifiedAt             DateTime?          @map("two_factor_verified_at")
+  failedLoginCount                Int                @default(0) @map("failed_login_count")
+  lockedUntil                     DateTime?          @map("locked_until")
+  lastLoginAt                     DateTime?          @map("last_login_at")
+  createdAt                       DateTime           @default(now()) @map("created_at")
+  updatedAt                       DateTime           @updatedAt @map("updated_at")
+  tenant                          Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  roles                           UserRole[]
+  sessions                        AuthSession[]
+  passwordResetOtps               PasswordResetOtp[]
+  backupCodes                     UserBackupCode[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, email])
   @@index([tenantId])
   @@index([tenantId, email])
+  @@index([tenantId, isActive])
+  @@index([lockedUntil])
   @@map("users")
+}
+
+model AuthSession {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  sessionTokenHash String    @unique @map("session_token_hash")
+  csrfTokenHash    String?   @map("csrf_token_hash")
+  userAgent        String?   @map("user_agent") @db.Text
+  ipAddress        String?   @map("ip_address")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  lastUsedAt       DateTime? @map("last_used_at")
+  rotatedAt        DateTime? @map("rotated_at")
+  expiresAt        DateTime  @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+  @@map("auth_sessions")
+}
+
+model PasswordResetOtp {
+  id                   String    @id @default(uuid()) @db.Uuid
+  userId               String    @map("user_id") @db.Uuid
+  email                String
+  otpHash              String    @map("otp_hash")
+  resetTransactionHash String?   @unique @map("reset_transaction_hash")
+  attempts             Int       @default(0)
+  maxAttempts          Int       @default(5) @map("max_attempts")
+  expiresAt            DateTime  @map("expires_at")
+  transactionExpiresAt DateTime? @map("transaction_expires_at")
+  verifiedAt           DateTime? @map("verified_at")
+  consumedAt           DateTime? @map("consumed_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([email])
+  @@index([expiresAt])
+  @@index([consumedAt])
+  @@map("password_reset_otps")
+}
+
+model UserBackupCode {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  codeHash  String    @unique @map("code_hash")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([usedAt])
+  @@map("user_backup_codes")
 }
 
 model Role {

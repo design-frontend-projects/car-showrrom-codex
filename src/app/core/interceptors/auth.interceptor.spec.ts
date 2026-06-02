@@ -1,6 +1,6 @@
+import { HttpRequest, HttpResponse } from '@angular/common/http';
 import { PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { HttpRequest, HttpResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { of } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -24,14 +24,14 @@ describe('authInterceptor', () => {
         storage = {};
       }),
     });
+    document.cookie = `${environment.auth.csrfCookieName}=csrf-token`;
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it('adds authorization and tenant headers when a tenant is selected', () => {
-    storage[environment.auth.tokenStorageKey] = 'access-token';
+  it('adds tenant and CSRF headers without bearer tokens', () => {
     storage[environment.auth.tenantStorageKey] = '11111111-1111-4111-8111-111111111111';
     let handledRequest: HttpRequest<unknown> | undefined;
 
@@ -44,7 +44,7 @@ describe('authInterceptor', () => {
     });
 
     TestBed.runInInjectionContext(() => {
-      authInterceptor(new HttpRequest('GET', '/api/rbac/users'), (request) => {
+      authInterceptor(new HttpRequest('POST', '/api/rbac/users', {}), (request) => {
         handledRequest = request;
         return of(new HttpResponse({ status: 200 }));
       }).subscribe();
@@ -54,7 +54,9 @@ describe('authInterceptor', () => {
       throw new Error('Expected the interceptor to forward the request.');
     }
 
-    expect(handledRequest.headers.get('Authorization')).toBe('Bearer access-token');
+    expect(handledRequest.headers.has('Authorization')).toBe(false);
+    expect(handledRequest.headers.get('X-CSRF-Token')).toBe('csrf-token');
     expect(handledRequest.headers.get('X-Tenant-Id')).toBe('11111111-1111-4111-8111-111111111111');
+    expect(handledRequest.withCredentials).toBe(true);
   });
 });

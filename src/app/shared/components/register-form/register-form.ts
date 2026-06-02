@@ -1,5 +1,5 @@
 import { Component, computed, output } from '@angular/core';
-import { email, required, schema } from '@angular/forms/signals';
+import { email, minLength, pattern, required, schema } from '@angular/forms/signals';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonModule } from 'primeng/button';
@@ -15,10 +15,14 @@ interface RegisterFormModel {
 }
 
 const registerSchema = schema<RegisterFormModel>((path) => {
-  required(path.displayName, { message: 'Display name is required.' });
-  required(path.email, { message: 'Email is required.' });
-  email(path.email, { message: 'Enter a valid email address.' });
-  required(path.password, { message: 'Password is required.' });
+  required(path.displayName, { message: 'auth.validation.displayName.required' });
+  required(path.email, { message: 'auth.validation.email.required' });
+  email(path.email, { message: 'auth.validation.email.email' });
+  required(path.password, { message: 'auth.validation.password.required' });
+  minLength(path.password, 12, { message: 'auth.validation.password.minLength' });
+  pattern(path.password, /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/, {
+    message: 'auth.validation.password.policy'
+  });
 });
 
 @Component({
@@ -82,7 +86,19 @@ export class RegisterForm {
     registerSchema
   );
   readonly model = this.form.model;
-  readonly canSubmit = computed(() => this.model().displayName.trim() !== '' && this.model().email.includes('@') && this.model().password.length >= 6);
+  readonly canSubmit = computed(() => {
+    const value = this.model();
+
+    return (
+      value.displayName.trim().length >= 2 &&
+      value.email.includes('@') &&
+      value.password.length >= 12 &&
+      /[a-z]/.test(value.password) &&
+      /[A-Z]/.test(value.password) &&
+      /\d/.test(value.password) &&
+      /[^A-Za-z0-9]/.test(value.password)
+    );
+  });
 
   update(field: keyof RegisterFormModel, value: string): void {
     this.model.update((current) => ({ ...current, [field]: value }));

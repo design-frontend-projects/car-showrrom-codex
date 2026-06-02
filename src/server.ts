@@ -6,6 +6,7 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import { join } from 'node:path';
+import { registerAuthRoutes } from './server/auth/auth.routes';
 import { checkDatabaseReady } from './server/db/prisma';
 import { registerRbacRoutes } from './server/rbac/rbac.routes';
 
@@ -15,6 +16,7 @@ const app = express();
 const angularApp = new AngularNodeAppEngine();
 
 app.use('/api', express.json({ limit: '1mb' }));
+registerAuthRoutes(app);
 
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });

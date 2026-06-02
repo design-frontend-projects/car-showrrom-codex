@@ -60,22 +60,22 @@
 - [x] 7.3 Build accessible responsive auth pages/components using existing PrimeNG, Tailwind, and app design-system patterns.
 - [x] 7.4 Integrate topbar authenticated avatar/account menu with profile/session status, 2FA/settings action, local signout, and global signout.
 - [x] 7.5 Update mobile drawer account controls so authenticated and anonymous states remain reachable in LTR and RTL layouts.
-- [ ] 7.6 Verify forms and account controls fit mobile, tablet, and desktop viewports without text overlap or horizontal overflow.
+- [x] 7.6 Verify forms and account controls fit mobile, tablet, and desktop viewports without text overlap or horizontal overflow.
 
 ## 8. I18n, Documentation, and Deployment Notes
 
-- [ ] 8.1 Add English auth translation keys for form labels, validation, server errors, reset flow, 2FA flow, account menu, and signout actions.
-- [ ] 8.2 Add matching Arabic auth translation keys and verify parity with existing i18n key tests.
-- [ ] 8.3 Update `README.md` with architecture diagram, auth API spec, environment variables, migration steps, local setup, verification commands, and deployment/security checklist.
-- [ ] 8.4 Add CI suggestions for Prisma validate/generate, unit tests, server integration tests, SSR production build, and migration checks.
+- [x] 8.1 Add English auth translation keys for form labels, validation, server errors, reset flow, 2FA flow, account menu, and signout actions.
+- [x] 8.2 Add matching Arabic auth translation keys and verify parity with existing i18n key tests.
+- [x] 8.3 Update `README.md` with architecture diagram, auth API spec, environment variables, migration steps, local setup, verification commands, and deployment/security checklist.
+- [x] 8.4 Add CI suggestions for Prisma validate/generate, unit tests, server integration tests, SSR production build, and migration checks.
 
 ## 9. Tests and Verification
 
-- [ ] 9.1 Add server unit tests for validation schemas, password hashing, session token hashing/rotation, CSRF checks, rate limits, reset OTP expiry/mismatch, and 2FA mismatch/backup-code use.
+- [x] 9.1 Add server unit tests for validation schemas, password hashing, session token hashing/rotation, CSRF checks, rate limits, reset OTP expiry/mismatch, and 2FA mismatch/backup-code use.
 - [ ] 9.2 Add server integration tests for register, login, logout, refresh/session, reset request/verify/complete, 2FA enable/verify/disable, CSRF rejection, and global signout.
-- [ ] 9.3 Add Angular unit tests for `AuthSignalStore`, auth API service, guards/interceptors, signal-form validation mapping, and topbar authenticated/anonymous rendering.
-- [ ] 9.4 Add or update i18n parity tests for auth translation keys.
-- [ ] 9.5 Run `npm test -- --watch=false` and fix failures.
+- [x] 9.3 Add Angular unit tests for `AuthSignalStore`, auth API service, guards/interceptors, signal-form validation mapping, and topbar authenticated/anonymous rendering.
+- [x] 9.4 Add or update i18n parity tests for auth translation keys.
+- [x] 9.5 Run `npm test -- --watch=false` and fix failures.
 - [ ] 9.6 Run `npm run prisma:validate`, `npm run prisma:generate`, and the auth migration against the local PostgreSQL database.
-- [ ] 9.7 Run `npm run build:prod` and confirm Angular SSR build succeeds with auth server routes and generated Prisma client.
+- [x] 9.7 Run `npm run build:prod` and confirm Angular SSR build succeeds with auth server routes and generated Prisma client.
 - [ ] 9.8 Perform focused manual SSR verification of registration, login, reset OTP, 2FA setup/login, topbar account menu, local signout, and global signout.
