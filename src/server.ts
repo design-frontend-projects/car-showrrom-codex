@@ -7,11 +7,14 @@ import {
 import express from 'express';
 import { join } from 'node:path';
 import { checkDatabaseReady } from './server/db/prisma';
+import { registerRbacRoutes } from './server/rbac/rbac.routes';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
+
+app.use('/api', express.json({ limit: '1mb' }));
 
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
@@ -22,8 +25,7 @@ app.get('/health/db', async (_req, res) => {
     await checkDatabaseReady();
     res.status(200).json({ status: 'ok', database: 'ready' });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Database readiness check failed';
+    const message = error instanceof Error ? error.message : 'Database readiness check failed';
 
     res.status(503).json({
       status: 'error',
@@ -32,6 +34,8 @@ app.get('/health/db', async (_req, res) => {
     });
   }
 });
+
+registerRbacRoutes(app);
 
 /**
  * Example Express Rest API endpoints can be defined here.
@@ -62,9 +66,7 @@ app.use(
 app.use((req, res, next) => {
   angularApp
     .handle(req)
-    .then((response) =>
-      response ? writeResponseToNodeResponse(response, res) : next(),
-    )
+    .then((response) => (response ? writeResponseToNodeResponse(response, res) : next()))
     .catch(next);
 });
 

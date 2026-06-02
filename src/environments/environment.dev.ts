@@ -5,25 +5,26 @@ export const environment = {
   auth: {
     tokenStorageKey: 'car-showroom.dev.access-token',
     refreshTokenStorageKey: 'car-showroom.dev.refresh-token',
-    unauthorizedRedirect: '/client/sign-in'
+    tenantStorageKey: 'car-showroom.dev.tenant-id',
+    unauthorizedRedirect: '/client/sign-in',
   },
   logging: {
     http: true,
-    router: true
+    router: true,
   },
   tours: {
     enabled: true,
-    storageKey: 'car-showroom.dev.tours'
+    storageKey: 'car-showroom.dev.tours',
   },
   i18n: {
     defaultLang: 'en',
-    fallbackLang: 'en'
+    fallbackLang: 'en',
   },
   googleMaps: {
     apiKey: 'AIzaSyC0IHdnPJ42sJWE-8qRQ6XXa18Zj6-J92A',
     mapId: '',
     language: 'en',
     region: 'AE',
-    libraries: ['maps', 'marker', 'places', 'routes', 'geocoding'] as const
-  }
+    libraries: ['maps', 'marker', 'places', 'routes', 'geocoding'] as const,
+  },
 } as const;

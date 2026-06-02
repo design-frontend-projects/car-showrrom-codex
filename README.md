@@ -46,6 +46,18 @@ npm run prisma:migrate:dev
 npm run prisma:generate
 ```
 
+The RBAC schema adds tenant-scoped users, roles, permissions, user-role mappings, and role-permission mappings. After creating a tenant and assigning an initial authorized user, initialize the required tenant roles through the server API:
+
+```bash
+curl -X POST http://localhost:4000/api/rbac/roles/defaults \
+  -H "Authorization: Bearer <signed-session-token>" \
+  -H "X-Tenant-Id: <tenant-uuid>"
+```
+
+RBAC API requests must include `X-Tenant-Id`. Angular sends this header from the selected tenant context, and the server validates the authenticated user has access to that tenant before setting PostgreSQL `app.tenant_id` for RLS-scoped Prisma work. The browser must not send or control bypass flags.
+
+PostgreSQL RLS is enabled on tenant-scoped RBAC tables. Normal requests are filtered by `app.tenant_id`; controlled system-owner bypass uses the server-set `app.rbac_bypass` setting after server-side authorization verifies the caller's `system-owner` role. For maintenance SQL, set a valid tenant context or perform controlled migration/repair work as a privileged database role that can intentionally manage RLS policies.
+
 After building and starting the SSR server, check process and database readiness:
 
 ```bash
