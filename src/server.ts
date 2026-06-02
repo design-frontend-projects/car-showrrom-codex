@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import { registerAuthRoutes } from './server/auth/auth.routes';
 import { checkDatabaseReady } from './server/db/prisma';
 import { registerRbacRoutes } from './server/rbac/rbac.routes';
+import { registerShowroomRoutes } from './server/showroom/routes';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -38,6 +39,7 @@ app.get('/health/db', async (_req, res) => {
 });
 
 registerRbacRoutes(app);
+registerShowroomRoutes(app);
 
 /**
  * Example Express Rest API endpoints can be defined here.

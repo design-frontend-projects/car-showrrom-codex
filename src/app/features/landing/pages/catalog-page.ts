@@ -1,22 +1,39 @@
-import { Component, computed, inject } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
+import { SliderModule } from 'primeng/slider';
+import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { firstValueFrom } from 'rxjs';
+import { CatalogApiService } from '../../../core/showroom/catalog-api.service';
+import {
+  ListingSearchParams,
+  ListingSummaryDto,
+  ShowroomMake,
+  ShowroomModel,
+  ShowroomTaxonomy,
+  ShowroomVariant,
+} from '../../../core/showroom/showroom.models';
 import { ResponsiveLayoutService } from '../../../core/layout/responsive-layout.service';
 import { formatCurrency, formatMileage } from '../../../utils/number-format.util';
 
-interface VehicleCard {
-  name: string;
-  price: number;
-  mileage: number;
-  tag: string;
-  imageUrl: string;
-}
-
 @Component({
   selector: 'app-catalog-page',
-  imports: [ButtonModule, CardModule, TranslatePipe],
+  imports: [
+    ButtonModule,
+    CardModule,
+    FormsModule,
+    InputTextModule,
+    RouterLink,
+    SelectModule,
+    SliderModule,
+    ToggleSwitchModule,
+    TranslatePipe,
+  ],
   template: `
     <section class="page-header">
       <span class="eyebrow">{{ 'catalog.inventory' | translate }}</span>
@@ -24,59 +41,230 @@ interface VehicleCard {
       <p>{{ copy() }}</p>
     </section>
 
-    <section class="vehicle-grid" [attr.data-density]="cardDensity()">
-      @for (vehicle of vehicles; track vehicle.name) {
-        <p-card styleClass="vehicle-card">
-          <ng-template #header>
-            <figure class="vehicle-media">
-              <img [src]="vehicle.imageUrl" [alt]="vehicle.name" loading="lazy" />
-            </figure>
-          </ng-template>
-          <ng-template #title>{{ vehicle.name }}</ng-template>
-          <ng-template #subtitle>{{ vehicle.tag }}</ng-template>
-          <div class="vehicle-meta">
-            <span>{{ price(vehicle.price) }}</span>
-            <span>{{ mileage(vehicle.mileage) }}</span>
+    <section class="catalog-workspace" [attr.data-density]="cardDensity()">
+      <aside class="catalog-filters">
+        <input
+          pInputText
+          type="search"
+          name="q"
+          [(ngModel)]="filters.q"
+          [placeholder]="'showroom.search.keyword' | translate"
+        />
+
+        <p-select
+          [options]="taxonomy()?.makes ?? []"
+          optionLabel="name"
+          optionValue="id"
+          [(ngModel)]="filters.makeId"
+          [placeholder]="'showroom.search.make' | translate"
+          (onChange)="onMakeChange()"
+        />
+
+        <p-select
+          [options]="models()"
+          optionLabel="name"
+          optionValue="id"
+          [(ngModel)]="filters.modelId"
+          [placeholder]="'showroom.search.model' | translate"
+          (onChange)="onModelChange()"
+        />
+
+        <p-select
+          [options]="variants()"
+          optionLabel="name"
+          optionValue="id"
+          [(ngModel)]="filters.variantId"
+          [placeholder]="'showroom.search.variant' | translate"
+        />
+
+        <p-select
+          [options]="conditionOptions"
+          optionLabel="label"
+          optionValue="value"
+          [(ngModel)]="filters.condition"
+          [placeholder]="'showroom.search.condition' | translate"
+        />
+
+        <input
+          pInputText
+          type="text"
+          name="location"
+          [(ngModel)]="filters.location"
+          [placeholder]="'showroom.search.location' | translate"
+        />
+
+        <label class="range-label">
+          <span>{{ 'showroom.search.priceRange' | translate }}</span>
+          <strong>{{ price(priceRange[0]) }} - {{ price(priceRange[1]) }}</strong>
+        </label>
+        <p-slider [(ngModel)]="priceRange" [range]="true" [min]="0" [max]="200000" [step]="5000" />
+
+        <label class="toggle-line">
+          <p-toggleswitch [(ngModel)]="activeOnly" />
+          <span>{{ 'showroom.search.activeOnly' | translate }}</span>
+        </label>
+
+        <div class="filter-actions">
+          <p-button [label]="'showroom.actions.apply' | translate" icon="pi pi-search" (onClick)="applyFilters()" />
+          <p-button [label]="'showroom.actions.clear' | translate" icon="pi pi-filter-slash" [outlined]="true" (onClick)="clearFilters()" />
+        </div>
+      </aside>
+
+      <div class="catalog-results">
+        @if (loading()) {
+          <div class="state-panel">{{ 'showroom.states.loading' | translate }}</div>
+        } @else if (error()) {
+          <div class="state-panel error">{{ error() | translate }}</div>
+        } @else if ((vehicles()?.items?.length ?? 0) === 0) {
+          <div class="state-panel">{{ 'showroom.states.empty' | translate }}</div>
+        } @else {
+          <div class="vehicle-grid" [attr.data-density]="cardDensity()">
+            @for (vehicle of vehicles()?.items; track vehicle.id) {
+              <p-card styleClass="vehicle-card">
+                <ng-template #header>
+                  <figure class="vehicle-media">
+                    <img [src]="imageUrl(vehicle)" [alt]="vehicle.title" loading="lazy" />
+                  </figure>
+                </ng-template>
+                <ng-template #title>{{ vehicle.title }}</ng-template>
+                <ng-template #subtitle>{{ vehicle.make.name }} {{ vehicle.model.name }} {{ vehicle.variant.name }}</ng-template>
+                <div class="vehicle-meta">
+                  <span>{{ price(vehicle.price) }}</span>
+                  <span>{{ vehicle.modelYear }}</span>
+                  <span>{{ mileage(vehicle.mileage) }}</span>
+                  <span>{{ ('showroom.status.' + vehicle.status) | translate }}</span>
+                </div>
+                <p-button
+                  [label]="'catalog.viewDetails' | translate"
+                  icon="pi pi-arrow-right"
+                  [outlined]="true"
+                  [routerLink]="['/cars', vehicle.id]"
+                />
+              </p-card>
+            }
           </div>
-          <p-button [label]="'catalog.viewDetails' | translate" icon="pi pi-arrow-right" [outlined]="true" />
-        </p-card>
-      }
+
+          <div class="pagination-row">
+            <p-button icon="pi pi-angle-left" [disabled]="(vehicles()?.page ?? 1) <= 1" [outlined]="true" (onClick)="goToPage((vehicles()?.page ?? 1) - 1)" />
+            <span>{{ vehicles()?.page }} / {{ vehicles()?.pageCount || 1 }}</span>
+            <p-button icon="pi pi-angle-right" [disabled]="(vehicles()?.page ?? 1) >= (vehicles()?.pageCount ?? 1)" [outlined]="true" (onClick)="goToPage((vehicles()?.page ?? 1) + 1)" />
+          </div>
+        }
+      </div>
     </section>
-  `
+  `,
 })
-export class CatalogPage {
+export class CatalogPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly translate = inject(TranslateService);
   private readonly layout = inject(ResponsiveLayoutService);
+  private readonly catalog = inject(CatalogApiService);
 
-  readonly pageKey = computed(() => this.route.snapshot.data['pageKey'] as 'usedCars' | 'newCars');
-  readonly title = computed(() => this.translate.instant(`pages.${this.pageKey()}.title`));
-  readonly copy = computed(() => this.translate.instant(`pages.${this.pageKey()}.copy`));
+  readonly taxonomy = signal<ShowroomTaxonomy | null>(null);
+  readonly vehicles = signal<{ items: ListingSummaryDto[]; page: number; pageCount: number } | null>(null);
+  readonly loading = signal(false);
+  readonly error = signal<string | null>(null);
   readonly cardDensity = computed(() => (this.layout.isDesktop() ? 'dense' : this.layout.isTablet() ? 'medium' : 'compact'));
   readonly price = formatCurrency;
   readonly mileage = formatMileage;
-
-  readonly vehicles: VehicleCard[] = [
-    {
-      name: 'BMW X5 xDrive40i',
-      price: 64800,
-      mileage: 12400,
-      tag: 'Executive SUV',
-      imageUrl: 'https://images.unsplash.com/photo-1556189250-72ba954cfc2b?auto=format&fit=crop&w=1000&q=82'
-    },
-    {
-      name: 'Tesla Model 3 Long Range',
-      price: 36900,
-      mileage: 18800,
-      tag: 'Electric sedan',
-      imageUrl: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=1000&q=82'
-    },
-    {
-      name: 'Toyota Land Cruiser',
-      price: 74200,
-      mileage: 5200,
-      tag: 'Adventure ready',
-      imageUrl: 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1000&q=82'
-    }
+  readonly pageKey = computed(() => this.route.snapshot.data['pageKey'] as 'usedCars' | 'newCars');
+  readonly title = computed(() => this.translate.instant(`pages.${this.pageKey()}.title`));
+  readonly copy = computed(() => this.translate.instant(`pages.${this.pageKey()}.copy`));
+  readonly conditionOptions = [
+    { label: 'New', value: 'NEW' },
+    { label: 'Certified', value: 'CERTIFIED_PRE_OWNED' },
+    { label: 'Used', value: 'USED' },
   ];
+
+  readonly filters: ListingSearchParams = {};
+  priceRange = [0, 200000];
+  activeOnly = true;
+
+  readonly models = computed<ShowroomModel[]>(() => {
+    const make = this.taxonomy()?.makes.find((item: ShowroomMake) => item.id === this.filters.makeId);
+    return make?.models ?? [];
+  });
+
+  readonly variants = computed<ShowroomVariant[]>(() => {
+    const model = this.models().find((item) => item.id === this.filters.modelId);
+    return model?.variants ?? [];
+  });
+
+  ngOnInit(): void {
+    void this.loadTaxonomy();
+    this.route.queryParamMap.subscribe((params) => {
+      this.filters.q = params.get('q') ?? undefined;
+      this.filters.makeId = params.get('makeId') ?? undefined;
+      this.filters.modelId = params.get('modelId') ?? undefined;
+      this.filters.variantId = params.get('variantId') ?? undefined;
+      this.filters.location = params.get('location') ?? undefined;
+      this.filters.page = Number(params.get('page') ?? 1);
+      this.filters.sort = 'newest';
+      void this.loadResults();
+    });
+  }
+
+  onMakeChange(): void {
+    this.filters.modelId = undefined;
+    this.filters.variantId = undefined;
+  }
+
+  onModelChange(): void {
+    this.filters.variantId = undefined;
+  }
+
+  applyFilters(): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        ...this.filters,
+        minPrice: this.priceRange[0] > 0 ? this.priceRange[0] : null,
+        maxPrice: this.priceRange[1] < 200000 ? this.priceRange[1] : null,
+        page: 1,
+      },
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  clearFilters(): void {
+    Object.keys(this.filters).forEach((key) => {
+      delete this.filters[key as keyof ListingSearchParams];
+    });
+    this.priceRange = [0, 200000];
+    void this.router.navigate([], { relativeTo: this.route, queryParams: {} });
+  }
+
+  goToPage(page: number): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { page },
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  imageUrl(vehicle: ListingSummaryDto): string {
+    return vehicle.primaryImage?.url ?? 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&w=1200&q=80';
+  }
+
+  private async loadTaxonomy(): Promise<void> {
+    try {
+      this.taxonomy.set(await firstValueFrom(this.catalog.taxonomy()));
+    } catch {
+      this.error.set('showroom.error.tenantRequired');
+    }
+  }
+
+  private async loadResults(): Promise<void> {
+    this.loading.set(true);
+    this.error.set(null);
+
+    try {
+      this.vehicles.set(await firstValueFrom(this.catalog.search({ ...this.filters, pageSize: 12 })));
+    } catch {
+      this.error.set('showroom.error.requestFailed');
+    } finally {
+      this.loading.set(false);
+    }
+  }
 }

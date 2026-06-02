@@ -127,29 +127,29 @@ export async function registerUser(input: RegisterInput, metadata: RequestMetada
       },
     });
 
-    const guestRole = await tx.role.findUnique({
+    const clientRole = await tx.role.findUnique({
       where: {
         tenantId_name: {
           tenantId: tenant.id,
-          name: 'guest',
+          name: 'manager',
         },
       },
     });
 
-    if (guestRole) {
+    if (clientRole) {
       await tx.userRole.upsert({
         where: {
           tenantId_userId_roleId: {
             tenantId: tenant.id,
             userId: user.id,
-            roleId: guestRole.id,
+            roleId: clientRole.id,
           },
         },
         update: {},
         create: {
           tenantId: tenant.id,
           userId: user.id,
-          roleId: guestRole.id,
+          roleId: clientRole.id,
         },
       });
     }

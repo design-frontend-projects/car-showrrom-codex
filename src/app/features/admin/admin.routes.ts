@@ -7,5 +7,11 @@ export const adminRoutes: Routes = [
     canActivate: [authGuard],
     loadComponent: () => import('./admin-shell').then((m) => m.AdminShell),
     data: { animation: 'admin' }
+  },
+  {
+    path: 'requests',
+    canActivate: [authGuard],
+    loadComponent: () => import('./admin-requests-page').then((m) => m.AdminRequestsPage),
+    data: { animation: 'admin-requests' }
   }
 ];

@@ -5,29 +5,29 @@ Angular 22 RC SSR scaffold for a modular car showroom application. The stack use
 ## Requirements
 
 - Node `^22.22.3`, `^24.15.0`, or `>=26.0.0`.
-- npm `11.x`.
+- pnpm `10.x`.
 - Angular packages are pinned to `22.0.0-rc.2`.
 - `.npmrc` enables `legacy-peer-deps=true` while PrimeNG and NgRx publish Angular 21 peer ranges.
 
 If the machine Node is older than the Angular 22 RC engine range, run commands through:
 
 ```bash
-npx -p node@24.15.0 -p npm@11.6.2 npm run build
+corepack pnpm run build
 ```
 
 ## Scripts
 
-- `npm start` runs the dev server.
-- `npm run build:dev` builds with dev environment replacements.
-- `npm run build:test` builds with test environment replacements.
-- `npm run build:prod` builds with prod environment replacements and SSR output.
-- `npm test` runs unit tests.
-- `npm run serve:ssr:car-showroom` runs the built SSR server.
-- `npm run prisma:validate` validates the Prisma schema and config.
-- `npm run prisma:generate` generates the Prisma client into `src/generated/prisma`.
-- `npm run prisma:migrate:dev` applies local Prisma migrations.
-- `npm run prisma:setup` validates the Prisma schema and generates the client.
-- `npm run verify:prisma` validates Prisma and runs the production SSR build.
+- `pnpm start` runs the dev server.
+- `pnpm run build:dev` builds with dev environment replacements.
+- `pnpm run build:test` builds with test environment replacements.
+- `pnpm run build:prod` builds with prod environment replacements and SSR output.
+- `pnpm test` runs unit tests.
+- `pnpm run serve:ssr:car-showroom` runs the built SSR server.
+- `pnpm run prisma:validate` validates the Prisma schema and config.
+- `pnpm run prisma:generate` generates the Prisma client into `src/generated/prisma`.
+- `pnpm run prisma:migrate:dev` applies local Prisma migrations.
+- `pnpm run prisma:setup` validates the Prisma schema and generates the client.
+- `pnpm run verify:prisma` validates Prisma and runs the production SSR build.
 
 ## Database
 
@@ -42,8 +42,8 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres?schema=show
 Prepare the local database and generated client:
 
 ```bash
-npm run prisma:migrate:dev
-npm run prisma:generate
+pnpm run prisma:migrate:dev
+pnpm run prisma:generate
 ```
 
 The RBAC schema adds tenant-scoped users, roles, permissions, user-role mappings, and role-permission mappings. After creating a tenant and assigning an initial authorized user, initialize the required tenant roles through the server API:
@@ -67,6 +67,23 @@ curl http://localhost:4000/health/db
 
 When running the Docker Compose stack against PostgreSQL on the host machine, `docker-compose.yml` defaults `DATABASE_URL` to `host.docker.internal:5432`. Override `DATABASE_URL` in the shell if your database runs elsewhere.
 
+## Showroom Inventory And Uploads
+
+The showroom domain adds tenant-scoped vehicle taxonomy, listings, ordered listing images, price/model history, and vehicle request review records. Public catalog reads use `/api/showroom/*`; client listing and request mutations require an authenticated session plus the tenant header; admin request review requires the default `showroom.requests.review` permission.
+
+Runtime uploads are stored outside the browser build under `UPLOAD_ROOT`:
+
+```bash
+UPLOAD_ROOT=".data/uploads"
+SHOWROOM_MAX_IMAGE_BYTES="5242880"
+SHOWROOM_MAX_IMAGES_PER_LISTING="12"
+SHOWROOM_MEDIA_URL_BASE="/media/listings"
+```
+
+The server accepts `jpg`, `jpeg`, `png`, and `webp` files, validates MIME type, extension, size, and file signature, stores a non-guessable storage key, and serves active-listing images through `/media/listings/:storageKey` without exposing filesystem paths. Do not point `UPLOAD_ROOT` at `public/` or any source-controlled build directory.
+
+Each client is currently limited to five active listings per tenant. This is enforced twice: the service pre-check returns the localized `showroom.error.activeListingLimit` error, and the PostgreSQL trigger `showroom.enforce_active_listing_limit` protects against races and future bypasses. When subscription plans are introduced, replace the trigger's hardcoded `5` with a lookup against an entitlement table keyed by tenant and seller user.
+
 ## Architecture
 
 - `src/app/core` contains singleton services, auth, HTTP, interceptors, logging, and onboarding.
@@ -76,6 +93,8 @@ When running the Docker Compose stack against PostgreSQL on the host machine, `d
 - `src/app/utils` contains reusable date, number, text, file, image, and signal-form helpers.
 - `src/server/db` contains server-only Prisma database access for the SSR Express server.
 - `src/server/auth` contains server-only registration, login, sessions, CSRF, reset OTP, TOTP, backup-code, password hashing, encryption, and validation code.
+- `src/server/showroom` contains server-only catalog, listing, upload, media, and request review logic.
+- `src/app/core/showroom` contains Angular-safe showroom DTOs, API services, and signal state.
 - `public/i18n` contains ngx-translate JSON files.
 
 ```text
@@ -133,9 +152,9 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
 Apply auth schema changes locally:
 
 ```bash
-npm run prisma:validate
-npm run prisma:migrate:dev
-npm run prisma:generate
+pnpm run prisma:validate
+pnpm run prisma:migrate:dev
+pnpm run prisma:generate
 ```
 
 The auth migration adds nullable user lifecycle fields and creates `auth_sessions`, `password_reset_otps`, and `user_backup_codes`. Existing RBAC tenant uniqueness and cascade behavior are preserved.
@@ -153,10 +172,10 @@ The auth migration adds nullable user lifecycle fields and creates `auth_session
 
 ### CI Suggestions
 
-- `npm run prisma:validate`
-- `npm run prisma:generate`
-- `npm test -- --watch=false`
-- `npm run build:prod`
+- `pnpm run prisma:validate`
+- `pnpm run prisma:generate`
+- `pnpm test -- --watch=false`
+- `pnpm run build:prod`
 - Apply migrations against a disposable PostgreSQL database or isolated test schema.
 
 ## Deployment

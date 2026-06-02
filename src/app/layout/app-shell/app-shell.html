@@ -46,7 +46,9 @@
       @if (!usesDesktopNavigation()) {
         <p-button icon="pi pi-bars" severity="secondary" [text]="true" class="menu-trigger" (onClick)="openDrawer()" />
       }
-      <a routerLink="/admin" class="admin-link">{{ 'admin.title' | translate }}</a>
+      @if (canReviewRequests()) {
+        <a routerLink="/admin/requests" class="admin-link">{{ 'admin.title' | translate }}</a>
+      }
     </div>
   </header>
 
@@ -84,7 +86,9 @@
       @for (item of navItems; track item.route) {
         <a [routerLink]="item.route" (click)="closeDrawer()">{{ item.labelKey | translate }}</a>
       }
-      <a routerLink="/admin" (click)="closeDrawer()">{{ 'admin.title' | translate }}</a>
+      @if (canReviewRequests()) {
+        <a routerLink="/admin/requests" (click)="closeDrawer()">{{ 'admin.title' | translate }}</a>
+      }
       @if (auth.isAuthenticated()) {
         <a routerLink="/client/profile" (click)="closeDrawer()">{{ 'auth.account.profile' | translate }}</a>
         <a routerLink="/client/security" (click)="closeDrawer()">{{ 'auth.account.security' | translate }}</a>
@@ -102,10 +106,12 @@
 
   <aside id="auth-rail" class="auth-rail">
     @if (auth.isAuthenticated()) {
+      @if (canManageListings()) {
       <a routerLink="/client/sell" class="sell-card">
         <i class="pi pi-car"></i>
         <span>{{ 'sidebar.sellYourCar' | translate }}</span>
       </a>
+      }
 
       <p-menu #userMenu [model]="userMenuItems()" [popup]="true" />
       <button class="avatar-button" type="button" (click)="userMenu.toggle($event)" aria-label="Open user menu">

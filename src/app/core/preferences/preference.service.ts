@@ -1,6 +1,8 @@
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { computed, DestroyRef, effect, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
-import { TranslateService } from '@ngx-translate/core';
+import { TranslateService, TranslationObject } from '@ngx-translate/core';
+import { take } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
@@ -36,6 +38,7 @@ export class PreferenceService {
   private readonly document = inject(DOCUMENT);
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly http = inject(HttpClient);
   private readonly translate = inject(TranslateService);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
   private readonly systemPrefersDark = signal(false);
@@ -110,7 +113,16 @@ export class PreferenceService {
     const root = this.document.documentElement;
     root.lang = language;
     root.dir = direction;
-    this.translate.use(language);
+    this.http
+      .get<TranslationObject>(`/i18n/${language}.json`)
+      .pipe(take(1))
+      .subscribe({
+        next: (translations) => {
+          this.translate.setTranslation(language, translations, false);
+          this.translate.use(language);
+        },
+        error: () => this.translate.use(language),
+      });
   }
 
   private persist(key: string, value: string): void {

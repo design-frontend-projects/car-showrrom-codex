@@ -41,6 +41,11 @@ export const routes: Routes = [
         data: { animation: 'contact' }
       },
       {
+        path: 'cars/:listingId',
+        loadComponent: () => import('./features/showroom/listing-detail-page').then((m) => m.ListingDetailPage),
+        data: { animation: 'listing-detail' }
+      },
+      {
         path: 'admin',
         loadChildren: () => import('./features/admin/admin.routes').then((m) => m.adminRoutes)
       },

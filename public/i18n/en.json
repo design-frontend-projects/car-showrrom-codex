@@ -236,6 +236,10 @@
       "requestFailed": "We could not load your profile. Please try again."
     }
   },
+  "errors": {
+    "summary": "Error",
+    "generic": "Something went wrong. Please try again."
+  },
   "validation": {
     "required": "This field is required.",
     "email": "Enter a valid email address."
@@ -253,6 +257,139 @@
       "english": "English",
       "arabic": "Arabic",
       "toggle": "Switch language"
+    }
+  },
+  "showroom": {
+    "actions": {
+      "activate": "Activate",
+      "apply": "Apply",
+      "approve": "Approve",
+      "archive": "Archive",
+      "backToResults": "Back to results",
+      "clear": "Clear",
+      "deactivate": "Deactivate",
+      "delete": "Delete",
+      "markSold": "Mark sold",
+      "reject": "Reject",
+      "saveDraft": "Save draft"
+    },
+    "admin": {
+      "decisionNote": "Decision note",
+      "empty": "No requests match this queue.",
+      "kicker": "Request review",
+      "requestsCopy": "Review submitted vehicle requests with client-safe context and audit-ready decisions.",
+      "requestsTitle": "Vehicle request queue",
+      "statusFilter": "Status"
+    },
+    "client": {
+      "activeUsage": "active listings used",
+      "copy": "Create listings, monitor status, upload images, and keep your active inventory under the current limit.",
+      "empty": "You have not created listings yet.",
+      "formTitle": "Listing details",
+      "kicker": "Seller workspace",
+      "title": "Manage your listings"
+    },
+    "condition": {
+      "CERTIFIED_PRE_OWNED": "Certified pre-owned",
+      "DAMAGED": "Damaged",
+      "NEW": "New",
+      "USED": "Used"
+    },
+    "details": {
+      "history": "History summary",
+      "modelChanges": "Model changes",
+      "priceChanges": "Price changes"
+    },
+    "error": {
+      "accessDenied": "You do not have access to this showroom workflow.",
+      "activeListingLimit": "You can have up to five active listings in this tenant.",
+      "csrf": "Refresh the page and try the showroom action again.",
+      "imageLimit": "This listing already has the maximum number of images.",
+      "imageNotFound": "Image was not found.",
+      "imageOrderInvalid": "Use a valid image order for this listing.",
+      "imageRequired": "Choose an image before uploading.",
+      "imageTooLarge": "The image file is too large.",
+      "invalidImageSignature": "The selected file does not match a supported image format.",
+      "invalidImageType": "Upload a JPG, PNG, or WebP image.",
+      "invalidMediaPath": "The media path is invalid.",
+      "invalidTaxonomy": "Choose a valid make, model, and variant combination.",
+      "listingNotFound": "Listing is unavailable.",
+      "mediaNotFound": "Media is unavailable.",
+      "rateLimited": "Too many showroom requests. Try again later.",
+      "requestAlreadyReviewed": "This request was already reviewed.",
+      "requestFailed": "Showroom request failed.",
+      "requestNotFound": "Vehicle request was not found.",
+      "tenantRequired": "Select a tenant before using showroom data.",
+      "unauthorized": "Sign in to continue.",
+      "unexpected": "Unexpected showroom error.",
+      "upload": "Image upload failed.",
+      "validation": "Check the highlighted showroom fields."
+    },
+    "fields": {
+      "condition": "Condition",
+      "description": "Description",
+      "location": "Location",
+      "make": "Make",
+      "mileage": "Mileage",
+      "model": "Model",
+      "price": "Price",
+      "seller": "Seller",
+      "showroom": "Showroom",
+      "title": "Title",
+      "variant": "Variant",
+      "year": "Year"
+    },
+    "requestStatus": {
+      "APPROVED": "Approved",
+      "PENDING_REVIEW": "Pending review",
+      "REJECTED": "Rejected"
+    },
+    "requests": {
+      "budgetMax": "Maximum budget",
+      "budgetMin": "Minimum budget",
+      "contactPreference": "Contact preference",
+      "copy": "Tell the showroom what you want and track the review decision.",
+      "empty": "No vehicle requests yet.",
+      "kicker": "Vehicle sourcing",
+      "menu": "Vehicle requests",
+      "notes": "Notes",
+      "submit": "Submit request",
+      "title": "Request a vehicle"
+    },
+    "search": {
+      "activeOnly": "Active listings",
+      "condition": "Condition",
+      "keyword": "Search inventory",
+      "location": "Location",
+      "make": "Make",
+      "model": "Model",
+      "priceRange": "Price range",
+      "variant": "Variant"
+    },
+    "states": {
+      "empty": "No active listings match this search.",
+      "loading": "Loading showroom data"
+    },
+    "status": {
+      "ACTIVE": "Active",
+      "ARCHIVED": "Archived",
+      "DELETED": "Deleted",
+      "DRAFT": "Draft",
+      "INACTIVE": "Inactive",
+      "PENDING_REVIEW": "Pending review",
+      "REJECTED": "Rejected",
+      "SOLD": "Sold"
+    },
+    "upload": {
+      "addImage": "Add image",
+      "images": "images"
+    },
+    "validation": {
+      "invalid_type": "Use a valid value.",
+      "price": "Enter a valid price greater than zero.",
+      "required": "This field is required.",
+      "range": "Check the range values.",
+      "too_small": "Value is too small."
     }
   }
 }

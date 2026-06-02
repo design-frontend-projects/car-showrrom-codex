@@ -28,14 +28,20 @@ export const clientRoutes: Routes = [
   {
     path: 'my-listings',
     canActivate: [authGuard],
-    loadComponent: () => import('./client-shell').then((m) => m.ClientShell),
+    loadComponent: () => import('./client-listings-page').then((m) => m.ClientListingsPage),
     data: { animation: 'my-listings' }
   },
   {
     path: 'sell',
     canActivate: [authGuard],
-    loadComponent: () => import('./client-shell').then((m) => m.ClientShell),
+    loadComponent: () => import('./client-listings-page').then((m) => m.ClientListingsPage),
     data: { animation: 'sell' }
+  },
+  {
+    path: 'requests',
+    canActivate: [authGuard],
+    loadComponent: () => import('./client-requests-page').then((m) => m.ClientRequestsPage),
+    data: { animation: 'client-requests' }
   },
   {
     path: 'sign-in',

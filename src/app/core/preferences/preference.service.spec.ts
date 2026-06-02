@@ -1,6 +1,8 @@
 import { DOCUMENT } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { TranslateService } from '@ngx-translate/core';
+import { of } from 'rxjs';
 import {
   directionForLanguage,
   LANGUAGE_STORAGE_KEY,
@@ -36,6 +38,8 @@ describe('PreferenceService helpers', () => {
 
 describe('PreferenceService document integration', () => {
   const translateUse = vi.fn();
+  const translateSetTranslation = vi.fn();
+  const httpGet = vi.fn(() => of({}));
   let mediaListener: ((event: MediaQueryListEvent) => void) | undefined;
   let storage: Record<string, string>;
 
@@ -54,6 +58,8 @@ describe('PreferenceService document integration', () => {
       })
     });
     translateUse.mockReset();
+    translateSetTranslation.mockReset();
+    httpGet.mockClear();
     mediaListener = undefined;
     vi.stubGlobal('matchMedia', (query: string) => ({
       matches: false,
@@ -83,7 +89,14 @@ describe('PreferenceService document integration', () => {
       providers: [
         PreferenceService,
         { provide: DOCUMENT, useValue: document },
-        { provide: TranslateService, useValue: { use: translateUse } }
+        { provide: HttpClient, useValue: { get: httpGet } },
+        {
+          provide: TranslateService,
+          useValue: {
+            setTranslation: translateSetTranslation,
+            use: translateUse
+          }
+        }
       ]
     });
     const service = TestBed.inject(PreferenceService);

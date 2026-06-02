@@ -1,5 +1,6 @@
 import { Component, computed, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -9,7 +10,7 @@ import { formatCurrency, formatMileage } from '../../utils/number-format.util';
 
 @Component({
   selector: 'app-landing-page',
-  imports: [ButtonModule, InputTextModule, RouterLink, TranslatePipe],
+  imports: [ButtonModule, FormsModule, InputTextModule, RouterLink, TranslatePipe],
   template: `
     <section class="hero-band" [attr.data-density]="heroDensity()">
       <div class="hero-copy">
@@ -17,16 +18,17 @@ import { formatCurrency, formatMileage } from '../../utils/number-format.util';
         <h1>{{ 'landing.title' | translate }}</h1>
         <p>{{ 'landing.subtitle' | translate }}</p>
 
-        <div id="hero-search" class="hero-search">
+        <form id="hero-search" class="hero-search" (ngSubmit)="submitSearch()">
           <input
             pInputText
             type="search"
             [placeholder]="'landing.searchPlaceholder' | translate"
-            [value]="ui.searchTerm()"
-            (input)="ui.updateSearchTerm($any($event.target).value)"
+            name="landingSearch"
+            [ngModel]="ui.searchTerm()"
+            (ngModelChange)="ui.updateSearchTerm($event)"
           />
-          <p-button [label]="'landing.search' | translate" icon="pi pi-search" />
-        </div>
+          <p-button type="submit" [label]="'landing.search' | translate" icon="pi pi-search" />
+        </form>
       </div>
 
       <div class="hero-panel" aria-label="Featured vehicle">
@@ -66,8 +68,17 @@ import { formatCurrency, formatMileage } from '../../utils/number-format.util';
 })
 export class LandingPage {
   readonly ui = inject(UiSignalStore);
+  private readonly router = inject(Router);
   private readonly layout = inject(ResponsiveLayoutService);
   readonly heroDensity = computed(() => (this.layout.isDesktop() ? 'full' : this.layout.isTablet() ? 'medium' : 'compact'));
   readonly price = formatCurrency;
   readonly mileage = formatMileage;
+
+  submitSearch(): void {
+    void this.router.navigate(['/used-cars'], {
+      queryParams: {
+        q: this.ui.searchTerm() || null,
+      },
+    });
+  }
 }

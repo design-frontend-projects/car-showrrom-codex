@@ -7,6 +7,10 @@
     "aboutUs": "من نحن",
     "contactUs": "اتصل بنا"
   },
+  "errors": {
+    "summary": "خطأ",
+    "generic": "حدث خطأ ما. حاول مرة أخرى."
+  },
   "landing": {
     "kicker": "معرض تنقل فاخر",
     "title": "اعثر على السيارة المناسبة بوضوح يليق بالمعارض.",
@@ -265,6 +269,139 @@
       "english": "الإنجليزية",
       "arabic": "العربية",
       "toggle": "تبديل اللغة"
+    }
+  },
+  "showroom": {
+    "actions": {
+      "activate": "تفعيل",
+      "apply": "تطبيق",
+      "approve": "موافقة",
+      "archive": "أرشفة",
+      "backToResults": "العودة للنتائج",
+      "clear": "مسح",
+      "deactivate": "إيقاف",
+      "delete": "حذف",
+      "markSold": "تم البيع",
+      "reject": "رفض",
+      "saveDraft": "حفظ كمسودة"
+    },
+    "admin": {
+      "decisionNote": "ملاحظة القرار",
+      "empty": "لا توجد طلبات مطابقة.",
+      "kicker": "مراجعة الطلبات",
+      "requestsCopy": "راجع طلبات السيارات مع سياق آمن للعميل وقرارات قابلة للتدقيق.",
+      "requestsTitle": "قائمة طلبات السيارات",
+      "statusFilter": "الحالة"
+    },
+    "client": {
+      "activeUsage": "قوائم نشطة مستخدمة",
+      "copy": "أنشئ القوائم وراقب الحالة وارفع الصور مع الالتزام بالحد الحالي.",
+      "empty": "لم تنشئ أي قوائم بعد.",
+      "formTitle": "تفاصيل القائمة",
+      "kicker": "مساحة البائع",
+      "title": "إدارة قوائمك"
+    },
+    "condition": {
+      "CERTIFIED_PRE_OWNED": "مستعملة معتمدة",
+      "DAMAGED": "متضررة",
+      "NEW": "جديدة",
+      "USED": "مستعملة"
+    },
+    "details": {
+      "history": "ملخص السجل",
+      "modelChanges": "تغييرات الطراز",
+      "priceChanges": "تغييرات السعر"
+    },
+    "error": {
+      "accessDenied": "ليست لديك صلاحية لهذا الإجراء.",
+      "activeListingLimit": "يمكنك امتلاك خمس قوائم نشطة كحد أقصى في هذا المستأجر.",
+      "csrf": "حدث الصفحة ثم حاول تنفيذ إجراء المعرض مرة أخرى.",
+      "imageLimit": "وصلت هذه القائمة إلى الحد الأقصى للصور.",
+      "imageNotFound": "لم يتم العثور على الصورة.",
+      "imageOrderInvalid": "استخدم ترتيب صور صالح لهذه القائمة.",
+      "imageRequired": "اختر صورة قبل الرفع.",
+      "imageTooLarge": "ملف الصورة كبير جدا.",
+      "invalidImageSignature": "الملف المحدد لا يطابق صيغة صورة مدعومة.",
+      "invalidImageType": "ارفع صورة JPG أو PNG أو WebP.",
+      "invalidMediaPath": "مسار الوسائط غير صالح.",
+      "invalidTaxonomy": "اختر تركيبة صحيحة للماركة والطراز والفئة.",
+      "listingNotFound": "القائمة غير متاحة.",
+      "mediaNotFound": "الوسائط غير متاحة.",
+      "rateLimited": "طلبات كثيرة جدا. حاول لاحقا.",
+      "requestAlreadyReviewed": "تمت مراجعة هذا الطلب مسبقا.",
+      "requestFailed": "فشل طلب المعرض.",
+      "requestNotFound": "لم يتم العثور على طلب السيارة.",
+      "tenantRequired": "اختر المستأجر قبل استخدام بيانات المعرض.",
+      "unauthorized": "سجل الدخول للمتابعة.",
+      "unexpected": "حدث خطأ غير متوقع في المعرض.",
+      "upload": "فشل رفع الصورة.",
+      "validation": "تحقق من حقول المعرض المحددة."
+    },
+    "fields": {
+      "condition": "الحالة",
+      "description": "الوصف",
+      "location": "الموقع",
+      "make": "الماركة",
+      "mileage": "المسافة",
+      "model": "الطراز",
+      "price": "السعر",
+      "seller": "البائع",
+      "showroom": "المعرض",
+      "title": "العنوان",
+      "variant": "الفئة",
+      "year": "السنة"
+    },
+    "requestStatus": {
+      "APPROVED": "مقبول",
+      "PENDING_REVIEW": "قيد المراجعة",
+      "REJECTED": "مرفوض"
+    },
+    "requests": {
+      "budgetMax": "أعلى ميزانية",
+      "budgetMin": "أدنى ميزانية",
+      "contactPreference": "طريقة التواصل",
+      "copy": "أخبر المعرض بما تريد وتابع قرار المراجعة.",
+      "empty": "لا توجد طلبات سيارات بعد.",
+      "kicker": "توفير سيارة",
+      "menu": "طلبات السيارات",
+      "notes": "ملاحظات",
+      "submit": "إرسال الطلب",
+      "title": "اطلب سيارة"
+    },
+    "search": {
+      "activeOnly": "القوائم النشطة",
+      "condition": "الحالة",
+      "keyword": "ابحث في المخزون",
+      "location": "الموقع",
+      "make": "الماركة",
+      "model": "الطراز",
+      "priceRange": "نطاق السعر",
+      "variant": "الفئة"
+    },
+    "states": {
+      "empty": "لا توجد قوائم نشطة تطابق البحث.",
+      "loading": "جاري تحميل بيانات المعرض"
+    },
+    "status": {
+      "ACTIVE": "نشطة",
+      "ARCHIVED": "مؤرشفة",
+      "DELETED": "محذوفة",
+      "DRAFT": "مسودة",
+      "INACTIVE": "غير نشطة",
+      "PENDING_REVIEW": "قيد المراجعة",
+      "REJECTED": "مرفوضة",
+      "SOLD": "مباعة"
+    },
+    "upload": {
+      "addImage": "إضافة صورة",
+      "images": "صور"
+    },
+    "validation": {
+      "invalid_type": "استخدم قيمة صالحة.",
+      "price": "أدخل سعرا صالحا أكبر من صفر.",
+      "required": "هذا الحقل مطلوب.",
+      "range": "تحقق من قيم النطاق.",
+      "too_small": "القيمة صغيرة جدا."
     }
   }
 }

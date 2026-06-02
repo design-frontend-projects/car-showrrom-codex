@@ -52,6 +52,8 @@ export class AppShell implements AfterViewInit {
   readonly drawerOpen = signal(false);
   readonly usesDesktopNavigation = computed(() => this.layout.isDesktop());
   readonly compactAuth = computed(() => !this.layout.isDesktop());
+  readonly canManageListings = computed(() => this.hasAnyRole(['manager', 'admin', 'showroom-manager', 'system-owner']));
+  readonly canReviewRequests = computed(() => this.hasAnyRole(['admin', 'showroom-manager', 'system-owner']));
 
   readonly userInitials = computed(() => {
     const name = this.auth.user()?.displayName ?? 'Guest User';
@@ -69,6 +71,7 @@ export class AppShell implements AfterViewInit {
     { label: this.t('auth.account.security'), icon: 'pi pi-shield', routerLink: '/client/security' },
     { label: this.t('auth.account.settings'), icon: 'pi pi-cog', routerLink: '/client/settings' },
     { label: this.t('auth.account.myListings'), icon: 'pi pi-list', routerLink: '/client/my-listings' },
+    { label: this.t('showroom.requests.menu'), icon: 'pi pi-inbox', routerLink: '/client/requests' },
     { separator: true },
     { label: this.t('auth.signOut.local'), icon: 'pi pi-sign-out', command: () => this.auth.logoutLocal() },
     { label: this.t('auth.signOut.global'), icon: 'pi pi-power-off', command: () => this.auth.logoutGlobal() }
@@ -122,5 +125,11 @@ export class AppShell implements AfterViewInit {
   private t(key: string): string {
     this.preferences.language();
     return this.translate.instant(key);
+  }
+
+  private hasAnyRole(roles: string[]): boolean {
+    const currentRoles = this.auth.user()?.roles ?? [];
+
+    return roles.some((role) => currentRoles.includes(role));
   }
 }
