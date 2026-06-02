@@ -13,6 +13,16 @@ describe('showroom routes', () => {
     expect(response.body.code).toBe('showroom.error.tenantRequired');
   });
 
+  it('requires tenant context for public inventory counters', async () => {
+    const app = express();
+    app.use('/api', express.json());
+    registerShowroomRoutes(app);
+
+    const response = await request(app).get('/api/showroom/inventory-counters').expect(400);
+
+    expect(response.body.code).toBe('showroom.error.tenantRequired');
+  });
+
   it('rejects unsafe media storage keys before filesystem access', async () => {
     const app = express();
     registerShowroomRoutes(app);
@@ -29,6 +39,20 @@ describe('showroom routes', () => {
 
     const response = await request(app)
       .post('/api/showroom/client/listings')
+      .set('X-Tenant-Id', '00000000-0000-0000-0000-000000000001')
+      .send({})
+      .expect(403);
+
+    expect(response.body.code).toBe('showroom.error.csrf');
+  });
+
+  it('rejects admin vehicle mutations without a valid CSRF token', async () => {
+    const app = express();
+    app.use('/api', express.json());
+    registerShowroomRoutes(app);
+
+    const response = await request(app)
+      .post('/api/showroom/admin/vehicles')
       .set('X-Tenant-Id', '00000000-0000-0000-0000-000000000001')
       .send({})
       .expect(403);

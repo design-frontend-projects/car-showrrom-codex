@@ -2,12 +2,13 @@ import { AfterViewInit, Component, computed, inject } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { RouterLink } from '@angular/router';
 import { ResponsiveLayoutService } from '../../core/layout/responsive-layout.service';
 import { TourService } from '../../core/onboarding/tour.service';
 
 @Component({
   selector: 'app-admin-shell',
-  imports: [ButtonModule, CardModule, TranslatePipe],
+  imports: [ButtonModule, CardModule, RouterLink, TranslatePipe],
   template: `
     <section id="admin-shell" class="workspace-shell">
       <div class="page-header">
@@ -20,6 +21,11 @@ import { TourService } from '../../core/onboarding/tour.service';
         <p-card><strong>128</strong><span>{{ 'admin.inventory' | translate }}</span></p-card>
         <p-card><strong>34</strong><span>{{ 'admin.leads' | translate }}</span></p-card>
         <p-card><strong>12</strong><span>{{ 'admin.pending' | translate }}</span></p-card>
+      </div>
+
+      <div class="button-row">
+        <p-button routerLink="/admin/vehicles" icon="pi pi-car" label="Manage vehicles" />
+        <p-button routerLink="/admin/vehicles/create" icon="pi pi-plus" label="Create vehicle" [outlined]="true" />
       </div>
     </section>
   `

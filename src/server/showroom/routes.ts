@@ -11,11 +11,15 @@ import { deleteStoredListingImage, listingImageUpload, serveListingImage, storeL
 import { isShowroomHttpError, mapShowroomError, ShowroomHttpError } from './errors';
 import {
   addListingImage,
+  createAdminVehicle,
   createListing,
   createVehicleRequest,
   deleteListing,
   deleteListingImage,
+  getAdminVehicle,
+  getVehicleInventoryCounters,
   getPublicListing,
+  listAdminVehicles,
   listAdminVehicleRequests,
   listClientListings,
   listClientVehicleRequests,
@@ -27,10 +31,15 @@ import {
   reviewVehicleRequest,
   searchListings,
   setPrimaryImage,
+  transitionAdminVehicleStatus,
   transitionListingStatus,
+  updateAdminVehicle,
   updateListing,
 } from './services';
 import {
+  adminVehicleInputSchema,
+  adminVehicleQuerySchema,
+  adminVehicleUpdateSchema,
   adminRequestQuerySchema,
   imageMetadataSchema,
   imageOrderSchema,
@@ -129,6 +138,18 @@ export function registerShowroomRoutes(app: Express): void {
       const listingId = requireParam(request, 'listingId');
       const result = await withRbacDatabaseContext({ tenantId, bypassTenantIsolation: false }, (tx) =>
         getPublicListing(tx, tenantId, listingId),
+      );
+
+      response.json(result);
+    }),
+  );
+
+  router.get(
+    '/inventory-counters',
+    handle(async (request, response) => {
+      const tenantId = readPublicTenantId(request);
+      const result = await withRbacDatabaseContext({ tenantId, bypassTenantIsolation: false }, (tx) =>
+        getVehicleInventoryCounters(tx, tenantId),
       );
 
       response.json(result);
@@ -338,6 +359,192 @@ export function registerShowroomRoutes(app: Express): void {
       });
 
       response.json(result);
+    }),
+  );
+
+  router.get(
+    '/admin/vehicles',
+    handle(async (request, response) => {
+      const tenantId = readPublicTenantId(request);
+      const query = parseShowroomPayload(adminVehicleQuerySchema, request.query);
+      const result = await withRbacDatabaseContext({ tenantId, bypassTenantIsolation: false }, async (tx) => {
+        const context = await requireShowroomContext(request, tx, SHOWROOM_PERMISSIONS.adminManage);
+
+        return listAdminVehicles(tx, context, query);
+      });
+
+      response.json(result);
+    }),
+  );
+
+  router.get(
+    '/admin/vehicles/:listingId',
+    handle(async (request, response) => {
+      const tenantId = readPublicTenantId(request);
+      const listingId = requireParam(request, 'listingId');
+      const result = await withRbacDatabaseContext({ tenantId, bypassTenantIsolation: false }, async (tx) => {
+        const context = await requireShowroomContext(request, tx, SHOWROOM_PERMISSIONS.adminManage);
+
+        return getAdminVehicle(tx, context, listingId);
+      });
+
+      response.json(result);
+    }),
+  );
+
+  router.post(
+    '/admin/vehicles',
+    mutationLimiter,
+    handle(async (request, response) => {
+      const tenantId = readPublicTenantId(request);
+      const body = parseShowroomPayload(adminVehicleInputSchema, request.body);
+      const result = await withRbacDatabaseContext({ tenantId, bypassTenantIsolation: false }, async (tx) => {
+        const context = await requireShowroomContext(request, tx, SHOWROOM_PERMISSIONS.adminManage);
+
+        return createAdminVehicle(tx, context, body);
+      });
+
+      response.status(201).json(result);
+    }),
+  );
+
+  router.patch(
+    '/admin/vehicles/:listingId',
+    mutationLimiter,
+    handle(async (request, response) => {
+      const tenantId = readPublicTenantId(request);
+      const listingId = requireParam(request, 'listingId');
+      const body = parseShowroomPayload(adminVehicleUpdateSchema, request.body);
+      const result = await withRbacDatabaseContext({ tenantId, bypassTenantIsolation: false }, async (tx) => {
+        const context = await requireShowroomContext(request, tx, SHOWROOM_PERMISSIONS.adminManage);
+
+        return updateAdminVehicle(tx, context, listingId, body);
+      });
+
+      response.json(result);
+    }),
+  );
+
+  router.post(
+    '/admin/vehicles/:listingId/status',
+    mutationLimiter,
+    handle(async (request, response) => {
+      const tenantId = readPublicTenantId(request);
+      const listingId = requireParam(request, 'listingId');
+      const body = parseShowroomPayload(listingStatusSchema, request.body);
+      const result = await withRbacDatabaseContext({ tenantId, bypassTenantIsolation: false }, async (tx) => {
+        const context = await requireShowroomContext(request, tx, SHOWROOM_PERMISSIONS.adminManage);
+
+        return transitionAdminVehicleStatus(tx, context, listingId, body.status);
+      });
+
+      response.json(result);
+    }),
+  );
+
+  router.delete(
+    '/admin/vehicles/:listingId',
+    mutationLimiter,
+    handle(async (request, response) => {
+      const tenantId = readPublicTenantId(request);
+      const listingId = requireParam(request, 'listingId');
+      await withRbacDatabaseContext({ tenantId, bypassTenantIsolation: false }, async (tx) => {
+        const context = await requireShowroomContext(request, tx, SHOWROOM_PERMISSIONS.adminManage);
+        await deleteListing(tx, context, listingId);
+      });
+
+      response.status(204).end();
+    }),
+  );
+
+  router.post(
+    '/admin/vehicles/:listingId/images',
+    mutationLimiter,
+    listingImageUpload.single('image'),
+    handle(async (request, response) => {
+      const file = request.file;
+
+      if (!file) {
+        throw new ShowroomHttpError(400, 'showroom.error.imageRequired', {
+          image: 'showroom.error.imageRequired',
+        });
+      }
+
+      const tenantId = readPublicTenantId(request);
+      const listingId = requireParam(request, 'listingId');
+      const metadata = parseShowroomPayload(imageMetadataSchema, request.body);
+      const stored = await storeListingImageFile(file);
+
+      try {
+        const result = await withRbacDatabaseContext(
+          { tenantId, bypassTenantIsolation: false },
+          async (tx) => {
+            const context = await requireShowroomContext(request, tx, SHOWROOM_PERMISSIONS.adminManage);
+
+            return addListingImage(tx, context, listingId, stored, metadata);
+          },
+        );
+
+        response.status(201).json(result);
+      } catch (error) {
+        await deleteStoredListingImage(stored.storageKey);
+        throw error;
+      }
+    }),
+  );
+
+  router.patch(
+    '/admin/vehicles/:listingId/images/order',
+    mutationLimiter,
+    handle(async (request, response) => {
+      const tenantId = readPublicTenantId(request);
+      const listingId = requireParam(request, 'listingId');
+      const body = parseShowroomPayload(imageOrderSchema, request.body);
+      const result = await withRbacDatabaseContext({ tenantId, bypassTenantIsolation: false }, async (tx) => {
+        const context = await requireShowroomContext(request, tx, SHOWROOM_PERMISSIONS.adminManage);
+
+        return reorderListingImages(tx, context, listingId, body.imageIds);
+      });
+
+      response.json(result);
+    }),
+  );
+
+  router.post(
+    '/admin/vehicles/:listingId/images/:imageId/primary',
+    mutationLimiter,
+    handle(async (request, response) => {
+      const tenantId = readPublicTenantId(request);
+      const listingId = requireParam(request, 'listingId');
+      const imageId = requireParam(request, 'imageId');
+      const result = await withRbacDatabaseContext({ tenantId, bypassTenantIsolation: false }, async (tx) => {
+        const context = await requireShowroomContext(request, tx, SHOWROOM_PERMISSIONS.adminManage);
+
+        return setPrimaryImage(tx, context, listingId, imageId);
+      });
+
+      response.json(result);
+    }),
+  );
+
+  router.delete(
+    '/admin/vehicles/:listingId/images/:imageId',
+    mutationLimiter,
+    handle(async (request, response) => {
+      const tenantId = readPublicTenantId(request);
+      const listingId = requireParam(request, 'listingId');
+      const imageId = requireParam(request, 'imageId');
+      const storageKey = await withRbacDatabaseContext(
+        { tenantId, bypassTenantIsolation: false },
+        async (tx) => {
+          const context = await requireShowroomContext(request, tx, SHOWROOM_PERMISSIONS.adminManage);
+
+          return deleteListingImage(tx, context, listingId, imageId);
+        },
+      );
+
+      await deleteStoredListingImage(storageKey);
+      response.status(204).end();
     }),
   );
 

@@ -166,6 +166,48 @@ export interface ClientListingsDto {
   items: ListingSummaryDto[];
 }
 
+export interface VehicleInventoryCountersDto {
+  newCars: number;
+  usedCars: number;
+  cachedAt: string;
+}
+
+export interface AdminVehicleListParams {
+  q?: string;
+  status?: CarListingStatus;
+  condition?: CarListingCondition;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface AdminVehicleListResult {
+  items: ListingSummaryDto[];
+  page: number;
+  pageSize: number;
+  total: number;
+  pageCount: number;
+  counters: VehicleInventoryCountersDto;
+}
+
+export interface AdminVehicleInputDto extends ListingInputDto {
+  vin?: string | null;
+  exteriorColorId?: string | null;
+  interiorColorId?: string | null;
+  exteriorColorName?: string | null;
+  interiorColorName?: string | null;
+  priceChangeReason?: string;
+  modelChangeReason?: string;
+}
+
+export interface AdminVehicleImageQueueItem {
+  id: string;
+  file: File;
+  previewUrl: string;
+  status: 'pending' | 'uploading' | 'succeeded' | 'failed';
+  progress: number;
+  error?: string;
+}
+
 export interface VehicleRequestDto {
   id: string;
   preferredMake?: string | null;

@@ -10,6 +10,7 @@ import {
   ShowroomModel,
   ShowroomTaxonomy,
   ShowroomVariant,
+  VehicleInventoryCountersDto,
 } from './showroom.models';
 
 @Injectable({ providedIn: 'root' })
@@ -38,6 +39,10 @@ export class CatalogApiService {
 
   detail(listingId: string): Observable<ListingDetailDto> {
     return this.api.get<ListingDetailDto>(`/showroom/listings/${listingId}`);
+  }
+
+  inventoryCounters(): Observable<VehicleInventoryCountersDto> {
+    return this.api.get<VehicleInventoryCountersDto>('/showroom/inventory-counters');
   }
 }
 

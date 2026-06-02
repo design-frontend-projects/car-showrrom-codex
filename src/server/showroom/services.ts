@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { CarListingStatus, VehicleRequestStatus } from '../../generated/prisma/client';
 import { SHOWROOM_PERMISSIONS } from '../rbac/default-roles';
 import { canAdminShowroom, type ShowroomContext } from './auth';
+import { getCachedVehicleInventoryCounters, invalidateVehicleInventoryCounters } from './cache';
 import { showroomConfig } from './config';
 import {
   mapImage,
@@ -15,12 +16,18 @@ import {
 } from './dto';
 import { ShowroomHttpError } from './errors';
 import {
+  adminListingPreviewInclude,
+  buildAdminListingWhere,
+  findAdminListingById,
   listingDetailInclude,
   listingFullInclude,
   type ShowroomTx,
   vehicleRequestInclude,
 } from './repositories';
 import {
+  type AdminVehicleInput,
+  type AdminVehicleQuery,
+  type AdminVehicleUpdateInput,
   type ListingInput,
   type ListingUpdateInput,
   type RequestReviewInput,
@@ -180,11 +187,101 @@ export async function createListing(
   context: ShowroomContext,
   input: ListingInput,
 ): Promise<unknown> {
+  return createListingForActor(tx, context, input, { enforceActiveLimit: true });
+}
+
+export async function listAdminVehicles(
+  tx: ShowroomTx,
+  context: ShowroomContext,
+  query: AdminVehicleQuery,
+): Promise<unknown> {
+  assertAdminVehiclePermission(context);
+  const where = buildAdminListingWhere(context.tenantId, query);
+  const skip = (query.page - 1) * query.pageSize;
+  const [items, total, counters] = await Promise.all([
+    tx.carListing.findMany({
+      where,
+      orderBy: [{ updatedAt: 'desc' }],
+      skip,
+      take: query.pageSize,
+      include: listingDetailInclude,
+    }),
+    tx.carListing.count({ where }),
+    getCachedVehicleInventoryCounters(tx, context.tenantId),
+  ]);
+
+  return {
+    items: items.map(mapListingSummary),
+    page: query.page,
+    pageSize: query.pageSize,
+    total,
+    pageCount: Math.ceil(total / query.pageSize),
+    counters,
+  };
+}
+
+export async function getAdminVehicle(
+  tx: ShowroomTx,
+  context: ShowroomContext,
+  listingId: string,
+): Promise<unknown> {
+  assertAdminVehiclePermission(context);
+  const listing = await findAdminListingById(tx, context.tenantId, listingId);
+
+  if (!listing) {
+    throw new ShowroomHttpError(404, 'showroom.error.listingNotFound');
+  }
+
+  return mapListingDetail(listing);
+}
+
+export async function createAdminVehicle(
+  tx: ShowroomTx,
+  context: ShowroomContext,
+  input: AdminVehicleInput,
+): Promise<unknown> {
+  assertAdminVehiclePermission(context);
+  return createListingForActor(tx, context, input, { enforceActiveLimit: false });
+}
+
+export async function updateAdminVehicle(
+  tx: ShowroomTx,
+  context: ShowroomContext,
+  listingId: string,
+  input: AdminVehicleUpdateInput,
+): Promise<unknown> {
+  assertAdminVehiclePermission(context);
+  return updateListing(tx, context, listingId, input);
+}
+
+export async function transitionAdminVehicleStatus(
+  tx: ShowroomTx,
+  context: ShowroomContext,
+  listingId: string,
+  status: CarListingStatus,
+): Promise<unknown> {
+  assertAdminVehiclePermission(context);
+  return transitionListingStatus(tx, context, listingId, status, { enforceActiveLimit: false });
+}
+
+export async function getVehicleInventoryCounters(
+  tx: ShowroomTx,
+  tenantId: string,
+): Promise<unknown> {
+  return getCachedVehicleInventoryCounters(tx, tenantId);
+}
+
+async function createListingForActor(
+  tx: ShowroomTx,
+  context: ShowroomContext,
+  input: ListingInput,
+  options: { enforceActiveLimit: boolean },
+): Promise<unknown> {
   await assertTaxonomyHierarchy(tx, context.tenantId, input.makeId, input.modelId, input.variantId);
 
   const status = input.status ?? CarListingStatus.DRAFT;
 
-  if (status === CarListingStatus.ACTIVE) {
+  if (status === CarListingStatus.ACTIVE && options.enforceActiveLimit) {
     await assertActiveListingLimit(tx, context.tenantId, context.userId);
   }
 
@@ -214,6 +311,8 @@ export async function createListing(
     },
     include: listingDetailInclude,
   });
+
+  invalidateVehicleInventoryCounters(context.tenantId);
 
   return mapListingDetail(listing);
 }
@@ -263,6 +362,12 @@ export async function updateListing(
       location: input.location,
       description: input.description,
       status: input.status,
+      publishedAt:
+        input.status === CarListingStatus.ACTIVE && existing.status !== CarListingStatus.ACTIVE
+          ? new Date()
+          : undefined,
+      soldAt: input.status === CarListingStatus.SOLD ? new Date() : undefined,
+      archivedAt: input.status === CarListingStatus.ARCHIVED ? new Date() : undefined,
     }),
     include: listingDetailInclude,
   });
@@ -306,6 +411,8 @@ export async function updateListing(
     });
   }
 
+  invalidateVehicleInventoryCounters(context.tenantId);
+
   return mapListingDetail(updated);
 }
 
@@ -314,10 +421,15 @@ export async function transitionListingStatus(
   context: ShowroomContext,
   listingId: string,
   status: CarListingStatus,
+  options: { enforceActiveLimit: boolean } = { enforceActiveLimit: true },
 ): Promise<unknown> {
   const listing = await getManageableListing(tx, context, listingId);
 
-  if (status === CarListingStatus.ACTIVE && listing.status !== CarListingStatus.ACTIVE) {
+  if (
+    status === CarListingStatus.ACTIVE &&
+    listing.status !== CarListingStatus.ACTIVE &&
+    options.enforceActiveLimit
+  ) {
     await assertActiveListingLimit(tx, context.tenantId, listing.sellerUserId);
   }
 
@@ -336,6 +448,8 @@ export async function transitionListingStatus(
     },
     include: listingDetailInclude,
   });
+
+  invalidateVehicleInventoryCounters(context.tenantId);
 
   return mapListingDetail(updated);
 }
@@ -358,6 +472,8 @@ export async function deleteListing(
       status: CarListingStatus.DELETED,
     },
   });
+
+  invalidateVehicleInventoryCounters(context.tenantId);
 }
 
 export async function addListingImage(
@@ -423,6 +539,8 @@ export async function addListingImage(
     },
   });
 
+  invalidateVehicleInventoryCounters(context.tenantId);
+
   return mapImage(created);
 }
 
@@ -467,6 +585,8 @@ export async function deleteListingImage(
       });
     }
   }
+
+  invalidateVehicleInventoryCounters(context.tenantId);
 
   return image.storageKey;
 }
@@ -513,6 +633,8 @@ export async function reorderListingImages(
     },
     orderBy: { sortOrder: 'asc' },
   });
+
+  invalidateVehicleInventoryCounters(context.tenantId);
 
   return ordered.map(mapImage);
 }
@@ -561,6 +683,8 @@ export async function setPrimaryImage(
     },
     orderBy: { sortOrder: 'asc' },
   });
+
+  invalidateVehicleInventoryCounters(context.tenantId);
 
   return images.map(mapImage);
 }
@@ -751,6 +875,12 @@ function assertRequestReviewPermission(context: ShowroomContext): void {
     !context.permissions.has(SHOWROOM_PERMISSIONS.requestReview) &&
     !context.permissions.has(SHOWROOM_PERMISSIONS.adminManage)
   ) {
+    throw new ShowroomHttpError(403, 'showroom.error.accessDenied');
+  }
+}
+
+function assertAdminVehiclePermission(context: ShowroomContext): void {
+  if (!canAdminShowroom(context)) {
     throw new ShowroomHttpError(403, 'showroom.error.accessDenied');
   }
 }

@@ -126,6 +126,20 @@ export const adminRequestQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(50).default(20),
 });
 
+export const adminVehicleQuerySchema = z.object({
+  q: z.string().trim().max(120).optional(),
+  status: z.enum(CarListingStatus).optional(),
+  condition: z.enum(CarListingCondition).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+export const adminVehicleInputSchema = listingInputSchema.extend({
+  status: z.enum(CarListingStatus).default(CarListingStatus.DRAFT),
+});
+
+export const adminVehicleUpdateSchema = listingUpdateSchema;
+
 export function parseShowroomPayload<T>(schema: z.ZodSchema<T>, payload: unknown): T {
   const result = schema.safeParse(payload);
 
@@ -150,3 +164,6 @@ export type ListingUpdateInput = z.infer<typeof listingUpdateSchema>;
 export type SearchQuery = z.infer<typeof searchQuerySchema>;
 export type VehicleRequestInput = z.infer<typeof requestInputSchema>;
 export type RequestReviewInput = z.infer<typeof requestReviewSchema>;
+export type AdminVehicleQuery = z.infer<typeof adminVehicleQuerySchema>;
+export type AdminVehicleInput = z.infer<typeof adminVehicleInputSchema>;
+export type AdminVehicleUpdateInput = z.infer<typeof adminVehicleUpdateSchema>;

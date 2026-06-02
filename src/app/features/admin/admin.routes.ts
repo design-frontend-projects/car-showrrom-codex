@@ -9,6 +9,24 @@ export const adminRoutes: Routes = [
     data: { animation: 'admin' }
   },
   {
+    path: 'vehicles',
+    canActivate: [authGuard],
+    loadComponent: () => import('./vehicles/admin-vehicles-page').then((m) => m.AdminVehiclesPage),
+    data: { animation: 'admin-vehicles' }
+  },
+  {
+    path: 'vehicles/create',
+    canActivate: [authGuard],
+    loadComponent: () => import('./vehicles/admin-vehicle-editor-page').then((m) => m.AdminVehicleEditorPage),
+    data: { animation: 'admin-vehicle-create' }
+  },
+  {
+    path: 'vehicles/edit/:id',
+    canActivate: [authGuard],
+    loadComponent: () => import('./vehicles/admin-vehicle-editor-page').then((m) => m.AdminVehicleEditorPage),
+    data: { animation: 'admin-vehicle-edit' }
+  },
+  {
     path: 'requests',
     canActivate: [authGuard],
     loadComponent: () => import('./admin-requests-page').then((m) => m.AdminRequestsPage),

@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { HttpParams } from '@angular/common/http';
 import { of } from 'rxjs';
 import { ApiService } from '../http/api.service';
+import { AdminVehicleApiService } from './admin-vehicle-api.service';
 import { CatalogApiService } from './catalog-api.service';
 import { ClientListingApiService } from './client-listing-api.service';
 import { VehicleRequestApiService } from './vehicle-request-api.service';
@@ -29,6 +30,53 @@ describe('showroom Angular services', () => {
     expect(params.get('q')).toBe('bmw');
     expect(params.get('page')).toBe('2');
     expect(params.get('minPrice')).toBe('10000');
+  });
+
+  it('uses public inventory counter endpoint', () => {
+    const api = apiMock();
+    TestBed.configureTestingModule({ providers: [{ provide: ApiService, useValue: api }] });
+    const service = TestBed.inject(CatalogApiService);
+
+    service.inventoryCounters().subscribe();
+
+    expect(api.get).toHaveBeenCalledWith('/showroom/inventory-counters');
+  });
+
+  it('uses admin vehicle endpoints for list, detail, save, status, and image ordering', () => {
+    const api = apiMock();
+    TestBed.configureTestingModule({ providers: [{ provide: ApiService, useValue: api }] });
+    const service = TestBed.inject(AdminVehicleApiService);
+
+    service.list({ q: 'range', status: 'ACTIVE', page: 2 }).subscribe();
+    service.detail('listing-id').subscribe();
+    service.create({
+      makeId: 'make-id',
+      modelId: 'model-id',
+      variantId: 'variant-id',
+      title: 'Test',
+      modelYear: 2026,
+      price: 1,
+      currency: 'USD',
+      mileage: 0,
+      condition: 'NEW',
+      location: 'Showroom',
+      description: 'Long enough vehicle description.',
+      status: 'DRAFT',
+    }).subscribe();
+    service.changeStatus('listing-id', 'ARCHIVED').subscribe();
+    service.reorderImages('listing-id', ['image-1', 'image-2']).subscribe();
+
+    const params = vi.mocked(api.get).mock.calls[0]?.[1] as HttpParams;
+    expect(vi.mocked(api.get).mock.calls[0]?.[0]).toBe('/showroom/admin/vehicles');
+    expect(params.get('q')).toBe('range');
+    expect(params.get('status')).toBe('ACTIVE');
+    expect(api.get).toHaveBeenCalledWith('/showroom/admin/vehicles/listing-id');
+    expect(api.post).toHaveBeenCalledWith('/showroom/admin/vehicles/listing-id/status', {
+      status: 'ARCHIVED',
+    });
+    expect(api.patch).toHaveBeenCalledWith('/showroom/admin/vehicles/listing-id/images/order', {
+      imageIds: ['image-1', 'image-2'],
+    });
   });
 
   it('uses client listing status and image ordering endpoints', () => {
