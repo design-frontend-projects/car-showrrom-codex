@@ -1,16 +1,16 @@
 ## 1. Data And Server Persistence
 
-- [ ] 1.1 Inspect existing migrations/data paths to confirm whether `car_listings.condition_id` can be null for rows with a valid enum `condition`.
-- [ ] 1.2 Add a narrow idempotent Prisma migration only if existing data can need a `condition_id` backfill from `vehicle_conditions.code`.
-- [ ] 1.3 Add a server-only helper that resolves an active tenant-scoped `VehicleCondition` by submitted condition code and returns a field-level `condition` validation error when missing.
-- [ ] 1.4 Update listing create and update persistence to write both `condition` and the resolved `conditionId`.
+- [x] 1.1 Inspect existing migrations/data paths to confirm whether `car_listings.condition_id` can be null for rows with a valid enum `condition`.
+- [x] 1.2 Add a narrow idempotent Prisma migration only if existing data can need a `condition_id` backfill from `vehicle_conditions.code`.
+- [x] 1.3 Add a server-only helper that resolves an active tenant-scoped `VehicleCondition` by submitted condition code and returns a field-level `condition` validation error when missing.
+- [x] 1.4 Update listing create and update persistence to write both `condition` and the resolved `conditionId`.
 
 ## 2. Client Listing Form
 
-- [ ] 2.1 Initialize the client listing draft with no hard-coded condition until active condition options load.
-- [ ] 2.2 Select the preferred active condition code from loaded options and keep submission disabled when no valid condition is available.
-- [ ] 2.3 Include condition validity in `canSave()` and preserve draft values when server validation fails.
-- [ ] 2.4 Surface `fieldErrors.condition` clearly in the existing listing form validation area.
+- [x] 2.1 Initialize the client listing draft with no hard-coded condition until active condition options load.
+- [x] 2.2 Select the preferred active condition code from loaded options and keep submission disabled when no valid condition is available.
+- [x] 2.3 Include condition validity in `canSave()` and preserve draft values when server validation fails.
+- [x] 2.4 Surface `fieldErrors.condition` clearly in the existing listing form validation area.
 
 ## 3. Tests
 
