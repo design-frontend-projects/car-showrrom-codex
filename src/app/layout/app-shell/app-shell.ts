@@ -54,6 +54,7 @@ export class AppShell implements AfterViewInit {
   readonly compactAuth = computed(() => !this.layout.isDesktop());
   readonly canManageListings = computed(() => this.hasAnyRole(['manager', 'admin', 'showroom-manager', 'system-owner']));
   readonly canReviewRequests = computed(() => this.hasAnyRole(['admin', 'showroom-manager', 'system-owner']));
+  readonly canManageRbac = computed(() => this.hasPermission('showroom.admin.manage') || this.hasAnyRole(['admin', 'system-owner']));
 
   readonly userInitials = computed(() => {
     const name = this.auth.user()?.displayName ?? 'Guest User';
@@ -131,5 +132,9 @@ export class AppShell implements AfterViewInit {
     const currentRoles = this.auth.user()?.roles ?? [];
 
     return roles.some((role) => currentRoles.includes(role));
+  }
+
+  private hasPermission(permission: string): boolean {
+    return this.auth.user()?.permissions.includes(permission) ?? false;
   }
 }

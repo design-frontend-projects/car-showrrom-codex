@@ -20,6 +20,7 @@ describe('ProfilePage', () => {
       name: 'Public Showroom',
     },
     roles: ['guest'],
+    permissions: ['showroom.catalog.read'],
     twoFactorEnabled: true,
     twoFactorRequired: false,
     lastLoginAt: null,

@@ -25,6 +25,7 @@ describe('auth profile route', () => {
         name: 'Public Showroom',
       },
       roles: ['guest'],
+      permissions: ['showroom.catalog.read'],
       twoFactorEnabled: true,
       twoFactorRequired: false,
       lastLoginAt: '2026-06-03T08:00:00.000Z',

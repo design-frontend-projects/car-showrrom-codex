@@ -46,7 +46,9 @@
       @if (!usesDesktopNavigation()) {
         <p-button icon="pi pi-bars" severity="secondary" [text]="true" class="menu-trigger" (onClick)="openDrawer()" />
       }
-      @if (canReviewRequests()) {
+      @if (canManageRbac()) {
+        <a routerLink="/admin/rbac/users" class="admin-link">{{ 'rbac.nav.workspace' | translate }}</a>
+      } @else if (canReviewRequests()) {
         <a routerLink="/admin/requests" class="admin-link">{{ 'admin.title' | translate }}</a>
       }
     </div>
@@ -86,7 +88,9 @@
       @for (item of navItems; track item.route) {
         <a [routerLink]="item.route" (click)="closeDrawer()">{{ item.labelKey | translate }}</a>
       }
-      @if (canReviewRequests()) {
+      @if (canManageRbac()) {
+        <a routerLink="/admin/rbac/users" (click)="closeDrawer()">{{ 'rbac.nav.workspace' | translate }}</a>
+      } @else if (canReviewRequests()) {
         <a routerLink="/admin/requests" (click)="closeDrawer()">{{ 'admin.title' | translate }}</a>
       }
       @if (auth.isAuthenticated()) {

@@ -939,6 +939,206 @@ input:focus-visible,
   margin: 0 auto var(--space-8);
 }
 
+.rbac-workspace {
+  display: grid;
+  gap: var(--space-4);
+  width: min(100%, var(--content-max));
+  margin: 0 auto var(--space-8);
+}
+
+.rbac-tabs,
+.rbac-toolbar,
+.segmented-control,
+.chip-row,
+.icon-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.rbac-tabs,
+.rbac-toolbar {
+  flex-wrap: wrap;
+}
+
+.rbac-tabs a,
+.rbac-admin-link {
+  min-height: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 var(--space-4);
+  color: var(--muted-strong);
+  background: var(--surface);
+  text-decoration: none;
+  font-weight: 850;
+}
+
+.rbac-tabs a.active,
+.rbac-tabs a:hover,
+.rbac-admin-link:hover {
+  color: var(--inverse-text);
+  background: var(--surface-inverse);
+}
+
+.segmented-control {
+  width: fit-content;
+  max-width: 100%;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-panel);
+  overflow-x: auto;
+}
+
+.segmented-control button {
+  min-height: 2.25rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 var(--space-3);
+  color: var(--muted-strong);
+  background: transparent;
+  cursor: pointer;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.segmented-control button.active {
+  color: var(--inverse-text);
+  background: var(--surface-inverse);
+}
+
+.rbac-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.rbac-table {
+  width: 100%;
+  min-width: 48rem;
+  border-collapse: collapse;
+}
+
+.rbac-table th,
+.rbac-table td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--line);
+  text-align: start;
+  vertical-align: top;
+}
+
+.rbac-table th {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.rbac-table td > strong,
+.rbac-table td > span {
+  display: block;
+}
+
+.rbac-table td > span {
+  margin-top: var(--space-1);
+  color: var(--muted);
+}
+
+.rbac-table.matrix {
+  min-width: 64rem;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 var(--space-2);
+  color: var(--accent-ink);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  font-size: 0.82rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.status-chip.danger {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+}
+
+.icon-actions {
+  gap: 4px;
+}
+
+.icon-actions button {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.icon-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.44;
+}
+
+.rbac-form,
+.rbac-panel {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.rbac-form label {
+  display: grid;
+  gap: var(--space-2);
+  color: var(--muted-strong);
+  font-weight: 850;
+}
+
+.check-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-panel);
+}
+
+.check-grid label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.rbac-panel {
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.rbac-panel h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.rbac-table code {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 [dir="rtl"] .pi-arrow-right,
 [dir="rtl"] .pi-send,
 [dir="rtl"] .pi-sign-in,
@@ -1050,6 +1250,10 @@ input:focus-visible,
   }
 
   .review-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .check-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

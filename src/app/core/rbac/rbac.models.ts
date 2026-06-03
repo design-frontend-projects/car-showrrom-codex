@@ -13,10 +13,25 @@ export interface RbacRoleSummary {
   isSystem: boolean;
 }
 
-export interface RbacPermissionSummary {
+export interface RbacPermission {
   id: string;
+  tenantId: string;
   action: string;
   description?: string | null;
+  group: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RbacPermissionGroup {
+  key: string;
+  label: string;
+  permissions: readonly RbacPermission[];
+}
+
+export interface RbacPermissionCatalog {
+  permissions: readonly RbacPermission[];
+  groups: readonly RbacPermissionGroup[];
 }
 
 export interface RbacUser {
@@ -41,34 +56,80 @@ export interface RbacRole {
   isSystem: boolean;
   createdAt: string;
   updatedAt: string;
-  permissions: readonly RbacPermissionSummary[];
+  permissions: readonly RbacPermission[];
 }
 
-export interface RbacPermission {
+export interface RbacRoleDetail extends RbacRole {
+  assignedUsers: readonly RbacUser[];
+}
+
+export interface RbacInvitation {
   id: string;
   tenantId: string;
-  action: string;
-  description?: string | null;
+  email: string;
+  displayName?: string | null;
+  status: 'pending' | 'accepted' | 'revoked' | string;
+  targetRoles: readonly string[];
+  expiresAt: string;
+  acceptedAt?: string | null;
+  revokedAt?: string | null;
+  resentAt?: string | null;
   createdAt: string;
   updatedAt: string;
+  inviter?: SafeUserRef | null;
+  resultingUser?: SafeUserRef | null;
+}
+
+export interface SafeUserRef {
+  id: string;
+  displayName: string;
+  email: string;
+}
+
+export interface RbacAuditEvent {
+  id: string;
+  tenantId: string;
+  actorUserId: string | null;
+  actor?: SafeUserRef | null;
+  action: string;
+  targetType: string;
+  targetId?: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface RbacPage<T> {
+  items: readonly T[];
+  page: number;
+  pageSize: number;
+  total: number;
 }
 
 export interface CreateUserRequest {
   email: string;
   displayName: string;
-  passwordHash: string;
+  initialPassword?: string;
+  generatePassword?: boolean;
   phone?: string | null;
   avatarUrl?: string | null;
   isActive?: boolean;
+  roleIds?: readonly string[];
 }
 
 export interface UpdateUserRequest {
   email?: string;
   displayName?: string;
-  passwordHash?: string;
   phone?: string | null;
   avatarUrl?: string | null;
   isActive?: boolean;
+  roleIds?: readonly string[];
+}
+
+export interface CreateInvitationRequest {
+  email: string;
+  displayName?: string | null;
+  roleIds?: readonly string[];
+  expiresInDays?: number;
 }
 
 export interface CreateRoleRequest {
@@ -92,26 +153,30 @@ export interface UpdatePermissionRequest {
 }
 
 export interface RbacListParams {
-  search?: string;
-  includeInactive?: boolean;
+  state?: 'active' | 'disabled' | 'all';
+}
+
+export interface AuditQueryParams {
+  page?: number;
+  pageSize?: number;
+  actorUserId?: string;
+  action?: string;
+  targetType?: string;
 }
 
 export type RbacQueryParams = Record<string, string | number | boolean>;
 
-export function toRbacQueryParams(params?: RbacListParams): RbacQueryParams | undefined {
+export function toQueryParams(params?: object): RbacQueryParams | undefined {
   if (!params) {
     return undefined;
   }
 
-  const queryParams: RbacQueryParams = {};
+  const queryParams = Object.fromEntries(
+    Object.entries(params).filter(
+      (entry): entry is [string, string | number | boolean] =>
+        typeof entry[1] === 'string' || typeof entry[1] === 'number' || typeof entry[1] === 'boolean',
+    ),
+  );
 
-  if (params.search) {
-    queryParams['search'] = params.search;
-  }
-
-  if (params.includeInactive !== undefined) {
-    queryParams['includeInactive'] = params.includeInactive;
-  }
-
-  return queryParams;
+  return Object.keys(queryParams).length > 0 ? queryParams : undefined;
 }

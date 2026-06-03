@@ -244,6 +244,110 @@
     "required": "This field is required.",
     "email": "Enter a valid email address."
   },
+  "rbac": {
+    "nav": {
+      "workspace": "RBAC admin",
+      "users": "Users",
+      "invitations": "Invitations",
+      "roles": "Roles",
+      "permissions": "Permissions",
+      "audit": "Audit"
+    },
+    "users": {
+      "title": "User access management",
+      "copy": "Manage tenant users, pending invitations, disabled accounts, role assignments, and reset initiation.",
+      "filter": "User lifecycle filter",
+      "empty": "No users match this view."
+    },
+    "invitations": {
+      "title": "Pending invitations",
+      "copy": "Review invitation lifecycle state without exposing invitation tokens or token hashes.",
+      "empty": "No invitations have been created."
+    },
+    "roles": {
+      "title": "Role management",
+      "copy": "Create roles, review assigned permissions, and protect system roles from destructive changes.",
+      "systemProtected": "This is a protected system role. Destructive actions are disabled.",
+      "assignedUsers": "Assigned users",
+      "noAssignedUsers": "No users are assigned to this role.",
+      "noDescription": "No description is available."
+    },
+    "permissions": {
+      "title": "Permission matrix",
+      "copy": "Group permissions by module and assign them to roles with checkbox controls.",
+      "empty": "No permissions are available."
+    },
+    "audit": {
+      "title": "RBAC audit activity",
+      "copy": "Review sanitized user, role, permission, invitation, assignment, and reset events.",
+      "empty": "No audit events have been recorded."
+    },
+    "access": {
+      "kicker": "Access denied",
+      "title": "You do not have RBAC administration access.",
+      "copy": "This workspace requires an administrator role or the showroom administration permission."
+    },
+    "actions": {
+      "backToRoles": "Back to roles",
+      "backToUsers": "Back to users",
+      "cancel": "Cancel",
+      "createPermission": "Create permission",
+      "createRole": "Create role",
+      "createUser": "Create user",
+      "disable": "Disable",
+      "edit": "Edit",
+      "editRole": "Edit role",
+      "editUser": "Edit user",
+      "enable": "Enable",
+      "invite": "Invite user",
+      "next": "Next",
+      "previous": "Previous",
+      "reset": "Reset",
+      "safeFallback": "Return home",
+      "save": "Save",
+      "sendInvite": "Send invitation"
+    },
+    "fields": {
+      "action": "Action",
+      "actions": "Actions",
+      "actor": "Actor",
+      "description": "Description",
+      "displayName": "Display name",
+      "email": "Email",
+      "expiresAt": "Expires",
+      "initialPassword": "Initial password",
+      "lastLogin": "Last login",
+      "metadata": "Metadata",
+      "name": "Name",
+      "permission": "Permission",
+      "permissions": "Permissions",
+      "role": "Role",
+      "roles": "Roles",
+      "status": "Status",
+      "target": "Target",
+      "timestamp": "Timestamp",
+      "updatedAt": "Updated",
+      "user": "User",
+      "phone": "Phone"
+    },
+    "status": {
+      "active": "Active",
+      "all": "All",
+      "disabled": "Disabled"
+    },
+    "states": {
+      "loading": "Loading RBAC data"
+    },
+    "fallback": {
+      "never": "Never"
+    },
+    "errors": {
+      "forbidden": "You do not have permission to manage tenant RBAC.",
+      "requestFailed": "RBAC request failed.",
+      "unauthorized": "Sign in to continue.",
+      "validation": "Check the RBAC form fields."
+    }
+  },
   "preferences": {
     "title": "Display preferences",
     "theme": {

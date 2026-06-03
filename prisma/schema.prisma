@@ -34,6 +34,8 @@ model Tenant {
   priceHistories  CarPriceHistory[]
   modelHistories  CarModelHistory[]
   vehicleRequests VehicleRequest[]
+  invitations     UserInvitation[]
+  rbacAuditEvents RbacAuditEvent[]
 
   @@map("tenants")
 }
@@ -69,6 +71,9 @@ model User {
   reviewedVehicleRequests         VehicleRequest[]   @relation("VehicleRequestReviewer")
   priceHistoryChanges             CarPriceHistory[]  @relation("PriceHistoryChangedBy")
   modelHistoryChanges             CarModelHistory[]  @relation("ModelHistoryChangedBy")
+  sentInvitations                  UserInvitation[]   @relation("InvitationInviter")
+  acceptedInvitations              UserInvitation[]   @relation("InvitationResultingUser")
+  rbacAuditEvents                  RbacAuditEvent[]    @relation("RbacAuditActor")
 
   @@unique([tenantId, id])
   @@unique([tenantId, email])
@@ -204,6 +209,55 @@ model RolePermission {
   @@index([roleId])
   @@index([permissionId])
   @@map("role_permissions")
+}
+
+model UserInvitation {
+  id              String    @id @default(uuid()) @db.Uuid
+  tenantId        String    @map("tenant_id") @db.Uuid
+  email           String
+  normalizedEmail String    @map("normalized_email")
+  displayName     String?   @map("display_name")
+  tokenHash       String    @unique @map("token_hash")
+  targetRoles     Json      @default("[]") @map("target_roles")
+  status          String    @default("pending")
+  expiresAt       DateTime  @map("expires_at")
+  acceptedAt      DateTime? @map("accepted_at")
+  revokedAt       DateTime? @map("revoked_at")
+  resentAt        DateTime? @map("resent_at")
+  inviterUserId   String    @map("inviter_user_id") @db.Uuid
+  resultingUserId String?   @map("resulting_user_id") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  inviter         User      @relation("InvitationInviter", fields: [tenantId, inviterUserId], references: [tenantId, id], onDelete: Cascade)
+  resultingUser   User?     @relation("InvitationResultingUser", fields: [tenantId, resultingUserId], references: [tenantId, id], onDelete: NoAction)
+
+  @@unique([tenantId, id])
+  @@index([tenantId, status, expiresAt])
+  @@index([tenantId, normalizedEmail])
+  @@index([tenantId, inviterUserId])
+  @@index([tenantId, resultingUserId])
+  @@map("user_invitations")
+}
+
+model RbacAuditEvent {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  actorUserId  String?  @map("actor_user_id") @db.Uuid
+  action       String
+  targetType   String   @map("target_type")
+  targetId     String?  @map("target_id") @db.Uuid
+  metadata     Json     @default("{}")
+  createdAt    DateTime @default(now()) @map("created_at")
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actor        User?    @relation("RbacAuditActor", fields: [tenantId, actorUserId], references: [tenantId, id], onDelete: NoAction)
+
+  @@unique([tenantId, id])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, actorUserId])
+  @@index([tenantId, action])
+  @@index([tenantId, targetType, targetId])
+  @@map("rbac_audit_events")
 }
 
 enum CarListingStatus {

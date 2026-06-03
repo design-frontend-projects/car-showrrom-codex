@@ -58,6 +58,16 @@ RBAC API requests must include `X-Tenant-Id`. Angular sends this header from the
 
 PostgreSQL RLS is enabled on tenant-scoped RBAC tables. Normal requests are filtered by `app.tenant_id`; controlled system-owner bypass uses the server-set `app.rbac_bypass` setting after server-side authorization verifies the caller's `system-owner` role. For maintenance SQL, set a valid tenant context or perform controlled migration/repair work as a privileged database role that can intentionally manage RLS policies.
 
+The admin RBAC workflow adds the tenant-scoped `UserInvitation` and `RbacAuditEvent` tables through migration `20260603120000_add_rbac_admin_invitation_audit`. These tables store only hashed invitation tokens and sanitized audit metadata. Apply migrations with the normal Prisma workflow before using the admin RBAC screens:
+
+```bash
+pnpm run prisma:validate
+pnpm run prisma:migrate:dev
+pnpm run prisma:generate
+```
+
+Admin user, role, permission, invitation, assignment, reset-initiation, and audit endpoints are exposed under `/api/admin/rbac/**`. Mutating requests require the session cookie, matching CSRF header/cookie, `X-Tenant-Id`, and tenant access through the `showroom.admin.manage` permission or the `admin`/`system-owner` roles. Browser-facing DTOs must not include password hashes, invitation tokens, reset OTPs, TOTP secrets, backup codes, or session hashes.
+
 After building and starting the SSR server, check process and database readiness:
 
 ```bash

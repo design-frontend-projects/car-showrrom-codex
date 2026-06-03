@@ -7,6 +7,7 @@ import {
 import express from 'express';
 import { join } from 'node:path';
 import { registerAuthRoutes } from './server/auth/auth.routes';
+import { registerAdminRbacRoutes } from './server/admin-rbac/admin-rbac.routes';
 import { checkDatabaseReady } from './server/db/prisma';
 import { registerRbacRoutes } from './server/rbac/rbac.routes';
 import { registerShowroomRoutes } from './server/showroom/routes';
@@ -18,6 +19,7 @@ const angularApp = new AngularNodeAppEngine();
 
 app.use('/api', express.json({ limit: '1mb' }));
 registerAuthRoutes(app);
+registerAdminRbacRoutes(app);
 
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });

@@ -1,6 +1,7 @@
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 import { firstValueFrom } from 'rxjs';
+import { TenantContextService } from '../rbac/tenant-context.service';
 import { AuthApiService } from './auth-api.service';
 import {
   AuthResponse,
@@ -35,14 +36,15 @@ export const AuthSignalStore = signalStore(
     isAuthenticated: computed(() => status() === 'authenticated'),
     requiresTwoFactor: computed(() => status() === 'twoFactorRequired' && challenge() !== null),
   })),
-  withMethods((store, api = inject(AuthApiService)) => ({
+  withMethods((store, api = inject(AuthApiService), tenantContext = inject(TenantContextService)) => ({
     async loadSession(): Promise<void> {
       patchState(store, { status: 'pending', error: null, fieldErrors: {} });
 
       try {
-        applyAuthResponse(store, await firstValueFrom(api.session()));
+        applyAuthResponse(store, await firstValueFrom(api.session()), tenantContext);
       } catch (error) {
         patchState(store, { ...initialAuthState, error: describeAuthError(error) });
+        tenantContext.clearSelectedTenantId();
       }
     },
 
@@ -64,7 +66,7 @@ export const AuthSignalStore = signalStore(
       patchState(store, { status: 'pending', error: null, fieldErrors: {} });
 
       try {
-        applyAuthResponse(store, await firstValueFrom(api.login(request)));
+        applyAuthResponse(store, await firstValueFrom(api.login(request)), tenantContext);
       } catch (error) {
         applyAuthError(store, error);
       }
@@ -74,7 +76,7 @@ export const AuthSignalStore = signalStore(
       patchState(store, { status: 'pending', error: null, fieldErrors: {} });
 
       try {
-        applySession(store, await firstValueFrom(api.register(request)));
+        applySession(store, await firstValueFrom(api.register(request)), tenantContext);
       } catch (error) {
         applyAuthError(store, error);
       }
@@ -82,9 +84,10 @@ export const AuthSignalStore = signalStore(
 
     async refresh(): Promise<void> {
       try {
-        applySession(store, await firstValueFrom(api.refresh()));
+        applySession(store, await firstValueFrom(api.refresh()), tenantContext);
       } catch (error) {
         patchState(store, { ...initialAuthState, error: describeAuthError(error) });
+        tenantContext.clearSelectedTenantId();
       }
     },
 
@@ -95,7 +98,7 @@ export const AuthSignalStore = signalStore(
         const response = await firstValueFrom(api.verifyTwoFactor(request));
 
         if ('status' in response && response.status === 'authenticated') {
-          applySession(store, response);
+          applySession(store, response, tenantContext);
         } else {
           patchState(store, { status: store.session() ? 'authenticated' : 'anonymous' });
         }
@@ -119,7 +122,7 @@ export const AuthSignalStore = signalStore(
     async disableTwoFactor(request: TwoFactorDisableRequest): Promise<boolean> {
       try {
         await firstValueFrom(api.disableTwoFactor(request));
-        applyAuthResponse(store, await firstValueFrom(api.session()));
+        applyAuthResponse(store, await firstValueFrom(api.session()), tenantContext);
         return true;
       } catch (error) {
         applyAuthError(store, error);
@@ -153,6 +156,7 @@ export const AuthSignalStore = signalStore(
         await firstValueFrom(api.logout());
       } finally {
         patchState(store, initialAuthState);
+        tenantContext.clearSelectedTenantId();
       }
     },
 
@@ -161,18 +165,20 @@ export const AuthSignalStore = signalStore(
         await firstValueFrom(api.logoutAll());
       } finally {
         patchState(store, initialAuthState);
+        tenantContext.clearSelectedTenantId();
       }
     },
 
     signOut(): void {
       patchState(store, initialAuthState);
+      tenantContext.clearSelectedTenantId();
     },
   })),
 );
 
-function applyAuthResponse(store: WritableAuthStore, response: AuthResponse): void {
+function applyAuthResponse(store: WritableAuthStore, response: AuthResponse, tenantContext: TenantContextService): void {
   if (response.status === 'authenticated') {
-    applySession(store, response);
+    applySession(store, response, tenantContext);
     return;
   }
 
@@ -188,9 +194,10 @@ function applyAuthResponse(store: WritableAuthStore, response: AuthResponse): vo
   }
 
   patchState(store, initialAuthState);
+  tenantContext.clearSelectedTenantId();
 }
 
-function applySession(store: WritableAuthStore, session: AuthSession): void {
+function applySession(store: WritableAuthStore, session: AuthSession, tenantContext: TenantContextService): void {
   patchState(store, {
     status: 'authenticated',
     session,
@@ -199,6 +206,7 @@ function applySession(store: WritableAuthStore, session: AuthSession): void {
     error: null,
     fieldErrors: {},
   });
+  tenantContext.setSelectedTenantId(session.user.tenantId);
 }
 
 function applyAuthError(store: WritableAuthStore, error: unknown, fallbackStatus: AuthState['status'] = 'failed'): void {

@@ -1,12 +1,20 @@
 import { computed, inject } from '@angular/core';
 import { patchState, signalStore, withComputed, withMethods, withState } from '@ngrx/signals';
 import { firstValueFrom } from 'rxjs';
+import { AuditService } from '../core/rbac/audit.service';
 import {
+  AuditQueryParams,
+  CreateInvitationRequest,
   CreatePermissionRequest,
   CreateRoleRequest,
   CreateUserRequest,
+  RbacAuditEvent,
+  RbacInvitation,
+  RbacPage,
   RbacPermission,
+  RbacPermissionGroup,
   RbacRole,
+  RbacRoleDetail,
   RbacUser,
   Tenant,
   UpdatePermissionRequest,
@@ -18,47 +26,81 @@ import { TenantService } from '../core/rbac/tenant.service';
 import { UserService } from '../core/rbac/user.service';
 
 type RbacStatus = 'idle' | 'loading' | 'loaded' | 'failed';
+type MutationStatus = 'idle' | 'saving' | 'failed';
 
 export interface RbacState {
   tenant: Tenant | null;
-  tenantStatus: RbacStatus;
-  tenantError: string | null;
   users: readonly RbacUser[];
-  usersStatus: RbacStatus;
-  usersError: string | null;
+  invitations: readonly RbacInvitation[];
   roles: readonly RbacRole[];
-  rolesStatus: RbacStatus;
-  rolesError: string | null;
+  selectedRole: RbacRoleDetail | null;
   permissions: readonly RbacPermission[];
+  permissionGroups: readonly RbacPermissionGroup[];
+  auditPage: RbacPage<RbacAuditEvent>;
+  usersFilter: 'active' | 'disabled' | 'all';
+  auditFilter: AuditQueryParams;
+  tenantStatus: RbacStatus;
+  usersStatus: RbacStatus;
+  invitationsStatus: RbacStatus;
+  rolesStatus: RbacStatus;
   permissionsStatus: RbacStatus;
-  permissionsError: string | null;
+  auditStatus: RbacStatus;
+  mutationStatus: MutationStatus;
+  error: string | null;
 }
+
+const emptyAuditPage: RbacPage<RbacAuditEvent> = {
+  items: [],
+  page: 1,
+  pageSize: 25,
+  total: 0,
+};
 
 const initialRbacState: RbacState = {
   tenant: null,
-  tenantStatus: 'idle',
-  tenantError: null,
   users: [],
-  usersStatus: 'idle',
-  usersError: null,
+  invitations: [],
   roles: [],
-  rolesStatus: 'idle',
-  rolesError: null,
+  selectedRole: null,
   permissions: [],
+  permissionGroups: [],
+  auditPage: emptyAuditPage,
+  usersFilter: 'all',
+  auditFilter: { page: 1, pageSize: 25 },
+  tenantStatus: 'idle',
+  usersStatus: 'idle',
+  invitationsStatus: 'idle',
+  rolesStatus: 'idle',
   permissionsStatus: 'idle',
-  permissionsError: null,
+  auditStatus: 'idle',
+  mutationStatus: 'idle',
+  error: null,
 };
 
 export const RbacSignalStore = signalStore(
   { providedIn: 'root' },
   withState(initialRbacState),
-  withComputed(({ tenantStatus, usersStatus, rolesStatus, permissionsStatus }) => ({
+  withComputed(({ users, invitations, roles, permissions, permissionGroups, auditPage, tenantStatus, usersStatus, invitationsStatus, rolesStatus, permissionsStatus, auditStatus }) => ({
+    activeUsers: computed(() => users().filter((user) => user.isActive)),
+    disabledUsers: computed(() => users().filter((user) => !user.isActive)),
+    pendingInvitations: computed(() => invitations().filter((invitation) => invitation.status === 'pending')),
+    roleOptions: computed(() => roles().map((role) => ({ label: role.name, value: role.id }))),
+    permissionMatrix: computed(() =>
+      roles().map((role) => ({
+        role,
+        permissionIds: new Set(role.permissions.map((permission) => permission.id)),
+      })),
+    ),
+    auditEvents: computed(() => auditPage().items),
+    hasPermissions: computed(() => permissions().length > 0 || permissionGroups().length > 0),
     isLoading: computed(
       () =>
         tenantStatus() === 'loading' ||
         usersStatus() === 'loading' ||
+        invitationsStatus() === 'loading' ||
         rolesStatus() === 'loading' ||
-        permissionsStatus() === 'loading',
+        permissionsStatus() === 'loading' ||
+        auditStatus() === 'loading',
     ),
   })),
   withMethods(
@@ -67,253 +109,269 @@ export const RbacSignalStore = signalStore(
       tenantService = inject(TenantService),
       userService = inject(UserService),
       roleService = inject(RoleService),
+      auditService = inject(AuditService),
     ) => ({
       async loadTenant(): Promise<void> {
-        patchState(store, { tenantStatus: 'loading', tenantError: null });
+        patchState(store, { tenantStatus: 'loading', error: null });
 
         try {
-          const tenant = await firstValueFrom(tenantService.current());
-          patchState(store, { tenant, tenantStatus: 'loaded', tenantError: null });
-        } catch (error) {
-          patchState(store, { tenantStatus: 'failed', tenantError: describeRbacError(error) });
-        }
-      },
-
-      async loadUsers(): Promise<void> {
-        patchState(store, { usersStatus: 'loading', usersError: null });
-
-        try {
-          const users = await firstValueFrom(userService.list());
-          patchState(store, { users, usersStatus: 'loaded', usersError: null });
-        } catch (error) {
-          patchState(store, { usersStatus: 'failed', usersError: describeRbacError(error) });
-        }
-      },
-
-      async createUser(request: CreateUserRequest): Promise<void> {
-        patchState(store, { usersStatus: 'loading', usersError: null });
-
-        try {
-          const user = await firstValueFrom(userService.create(request));
           patchState(store, {
-            users: [...store.users(), user],
-            usersStatus: 'loaded',
-            usersError: null,
+            tenant: await firstValueFrom(tenantService.current()),
+            tenantStatus: 'loaded',
           });
         } catch (error) {
-          patchState(store, { usersStatus: 'failed', usersError: describeRbacError(error) });
+          patchFailure(store, { tenantStatus: 'failed' }, error);
         }
       },
 
-      async updateUser(userId: string, request: UpdateUserRequest): Promise<void> {
-        patchState(store, { usersStatus: 'loading', usersError: null });
+      async loadUsers(state: 'active' | 'disabled' | 'all' = store.usersFilter()): Promise<void> {
+        patchState(store, { usersStatus: 'loading', usersFilter: state, error: null });
 
         try {
-          const user = await firstValueFrom(userService.update(userId, request));
           patchState(store, {
-            users: store.users().map((existing) => (existing.id === user.id ? user : existing)),
+            users: await firstValueFrom(userService.list({ state })),
             usersStatus: 'loaded',
-            usersError: null,
           });
         } catch (error) {
-          patchState(store, { usersStatus: 'failed', usersError: describeRbacError(error) });
+          patchFailure(store, { usersStatus: 'failed' }, error);
         }
       },
 
-      async deleteUser(userId: string): Promise<void> {
-        patchState(store, { usersStatus: 'loading', usersError: null });
+      async loadInvitations(): Promise<void> {
+        patchState(store, { invitationsStatus: 'loading', error: null });
 
         try {
-          await firstValueFrom(userService.delete(userId));
           patchState(store, {
-            users: store.users().filter((user) => user.id !== userId),
-            usersStatus: 'loaded',
-            usersError: null,
+            invitations: await firstValueFrom(userService.listInvitations()),
+            invitationsStatus: 'loaded',
           });
         } catch (error) {
-          patchState(store, { usersStatus: 'failed', usersError: describeRbacError(error) });
+          patchFailure(store, { invitationsStatus: 'failed' }, error);
         }
       },
 
       async loadRoles(): Promise<void> {
-        patchState(store, { rolesStatus: 'loading', rolesError: null });
+        patchState(store, { rolesStatus: 'loading', error: null });
 
         try {
-          const roles = await firstValueFrom(roleService.list());
-          patchState(store, { roles, rolesStatus: 'loaded', rolesError: null });
+          patchState(store, { roles: await firstValueFrom(roleService.list()), rolesStatus: 'loaded' });
         } catch (error) {
-          patchState(store, { rolesStatus: 'failed', rolesError: describeRbacError(error) });
+          patchFailure(store, { rolesStatus: 'failed' }, error);
         }
       },
 
-      async initializeDefaultRoles(): Promise<void> {
-        patchState(store, { rolesStatus: 'loading', rolesError: null });
+      async loadRoleDetail(roleId: string): Promise<void> {
+        patchState(store, { rolesStatus: 'loading', error: null });
 
         try {
-          const roles = await firstValueFrom(roleService.initializeDefaults());
-          patchState(store, { roles, rolesStatus: 'loaded', rolesError: null });
-        } catch (error) {
-          patchState(store, { rolesStatus: 'failed', rolesError: describeRbacError(error) });
-        }
-      },
-
-      async createRole(request: CreateRoleRequest): Promise<void> {
-        patchState(store, { rolesStatus: 'loading', rolesError: null });
-
-        try {
-          const role = await firstValueFrom(roleService.create(request));
           patchState(store, {
-            roles: [...store.roles(), role],
+            selectedRole: await firstValueFrom(roleService.detail(roleId)),
             rolesStatus: 'loaded',
-            rolesError: null,
           });
         } catch (error) {
-          patchState(store, { rolesStatus: 'failed', rolesError: describeRbacError(error) });
-        }
-      },
-
-      async updateRole(roleId: string, request: UpdateRoleRequest): Promise<void> {
-        patchState(store, { rolesStatus: 'loading', rolesError: null });
-
-        try {
-          const role = await firstValueFrom(roleService.update(roleId, request));
-          patchState(store, {
-            roles: store.roles().map((existing) => (existing.id === role.id ? role : existing)),
-            rolesStatus: 'loaded',
-            rolesError: null,
-          });
-        } catch (error) {
-          patchState(store, { rolesStatus: 'failed', rolesError: describeRbacError(error) });
-        }
-      },
-
-      async deleteRole(roleId: string): Promise<void> {
-        patchState(store, { rolesStatus: 'loading', rolesError: null });
-
-        try {
-          await firstValueFrom(roleService.delete(roleId));
-          patchState(store, {
-            roles: store.roles().filter((role) => role.id !== roleId),
-            rolesStatus: 'loaded',
-            rolesError: null,
-          });
-        } catch (error) {
-          patchState(store, { rolesStatus: 'failed', rolesError: describeRbacError(error) });
-        }
-      },
-
-      async assignPermission(roleId: string, permissionId: string): Promise<void> {
-        patchState(store, { rolesStatus: 'loading', rolesError: null });
-
-        try {
-          await firstValueFrom(roleService.assignPermission(roleId, permissionId));
-          const roles = await firstValueFrom(roleService.list());
-          patchState(store, { roles, rolesStatus: 'loaded', rolesError: null });
-        } catch (error) {
-          patchState(store, { rolesStatus: 'failed', rolesError: describeRbacError(error) });
-        }
-      },
-
-      async removePermission(roleId: string, permissionId: string): Promise<void> {
-        patchState(store, { rolesStatus: 'loading', rolesError: null });
-
-        try {
-          await firstValueFrom(roleService.removePermission(roleId, permissionId));
-          const roles = await firstValueFrom(roleService.list());
-          patchState(store, { roles, rolesStatus: 'loaded', rolesError: null });
-        } catch (error) {
-          patchState(store, { rolesStatus: 'failed', rolesError: describeRbacError(error) });
+          patchFailure(store, { rolesStatus: 'failed' }, error);
         }
       },
 
       async loadPermissions(): Promise<void> {
-        patchState(store, { permissionsStatus: 'loading', permissionsError: null });
+        patchState(store, { permissionsStatus: 'loading', error: null });
 
         try {
-          const permissions = await firstValueFrom(roleService.listPermissions());
-          patchState(store, { permissions, permissionsStatus: 'loaded', permissionsError: null });
-        } catch (error) {
+          const catalog = await firstValueFrom(roleService.listPermissions());
           patchState(store, {
-            permissionsStatus: 'failed',
-            permissionsError: describeRbacError(error),
+            permissions: catalog.permissions,
+            permissionGroups: catalog.groups,
+            permissionsStatus: 'loaded',
           });
+        } catch (error) {
+          patchFailure(store, { permissionsStatus: 'failed' }, error);
         }
+      },
+
+      async loadAudit(filter: AuditQueryParams = store.auditFilter()): Promise<void> {
+        patchState(store, { auditStatus: 'loading', auditFilter: filter, error: null });
+
+        try {
+          patchState(store, {
+            auditPage: await firstValueFrom(auditService.list(filter)),
+            auditStatus: 'loaded',
+          });
+        } catch (error) {
+          patchFailure(store, { auditStatus: 'failed' }, error);
+        }
+      },
+
+      async loadWorkspace(): Promise<void> {
+        await Promise.all([
+          this.loadTenant(),
+          this.loadUsers(),
+          this.loadInvitations(),
+          this.loadRoles(),
+          this.loadPermissions(),
+          this.loadAudit(),
+        ]);
+      },
+
+      async createUser(request: CreateUserRequest): Promise<void> {
+        await runMutation(store, async () => {
+          const user = await firstValueFrom(userService.create(request));
+          patchState(store, { users: upsertById(store.users(), user) });
+        });
+      },
+
+      async updateUser(userId: string, request: UpdateUserRequest): Promise<void> {
+        await runMutation(store, async () => {
+          const user = await firstValueFrom(userService.update(userId, request));
+          patchState(store, { users: upsertById(store.users(), user) });
+        });
+      },
+
+      async disableUser(userId: string): Promise<void> {
+        await runMutation(store, async () => {
+          const user = await firstValueFrom(userService.disable(userId));
+          patchState(store, { users: upsertById(store.users(), user) });
+        });
+      },
+
+      async enableUser(userId: string): Promise<void> {
+        await runMutation(store, async () => {
+          const user = await firstValueFrom(userService.enable(userId));
+          patchState(store, { users: upsertById(store.users(), user) });
+        });
+      },
+
+      async initiateReset(userId: string): Promise<void> {
+        await runMutation(store, () => firstValueFrom(userService.initiateReset(userId)));
+      },
+
+      async inviteUser(request: CreateInvitationRequest): Promise<void> {
+        await runMutation(store, async () => {
+          const invitation = await firstValueFrom(userService.invite(request));
+          patchState(store, { invitations: upsertById(store.invitations(), invitation) });
+        });
+      },
+
+      async revokeInvitation(invitationId: string): Promise<void> {
+        await runMutation(store, async () => {
+          const invitation = await firstValueFrom(userService.revokeInvitation(invitationId));
+          patchState(store, { invitations: upsertById(store.invitations(), invitation) });
+        });
+      },
+
+      async resendInvitation(invitationId: string): Promise<void> {
+        await runMutation(store, async () => {
+          const invitation = await firstValueFrom(userService.resendInvitation(invitationId));
+          patchState(store, { invitations: upsertById(store.invitations(), invitation) });
+        });
+      },
+
+      async createRole(request: CreateRoleRequest): Promise<void> {
+        await runMutation(store, async () => {
+          const role = await firstValueFrom(roleService.create(request));
+          patchState(store, { roles: upsertById(store.roles(), role) });
+        });
+      },
+
+      async updateRole(roleId: string, request: UpdateRoleRequest): Promise<void> {
+        await runMutation(store, async () => {
+          const role = await firstValueFrom(roleService.update(roleId, request));
+          patchState(store, { roles: upsertById(store.roles(), role) });
+        });
+      },
+
+      async deleteRole(roleId: string): Promise<void> {
+        await runMutation(store, async () => {
+          await firstValueFrom(roleService.delete(roleId));
+          patchState(store, { roles: store.roles().filter((role) => role.id !== roleId) });
+        });
       },
 
       async createPermission(request: CreatePermissionRequest): Promise<void> {
-        patchState(store, { permissionsStatus: 'loading', permissionsError: null });
-
-        try {
-          const permission = await firstValueFrom(roleService.createPermission(request));
-          patchState(store, {
-            permissions: [...store.permissions(), permission],
-            permissionsStatus: 'loaded',
-            permissionsError: null,
-          });
-        } catch (error) {
-          patchState(store, {
-            permissionsStatus: 'failed',
-            permissionsError: describeRbacError(error),
-          });
-        }
+        await runMutation(store, async () => {
+          await firstValueFrom(roleService.createPermission(request));
+          await this.loadPermissions();
+        });
       },
 
-      async updatePermission(
-        permissionId: string,
-        request: UpdatePermissionRequest,
-      ): Promise<void> {
-        patchState(store, { permissionsStatus: 'loading', permissionsError: null });
-
-        try {
-          const permission = await firstValueFrom(
-            roleService.updatePermission(permissionId, request),
-          );
-          patchState(store, {
-            permissions: store
-              .permissions()
-              .map((existing) => (existing.id === permission.id ? permission : existing)),
-            permissionsStatus: 'loaded',
-            permissionsError: null,
-          });
-        } catch (error) {
-          patchState(store, {
-            permissionsStatus: 'failed',
-            permissionsError: describeRbacError(error),
-          });
-        }
+      async updatePermission(permissionId: string, request: UpdatePermissionRequest): Promise<void> {
+        await runMutation(store, async () => {
+          await firstValueFrom(roleService.updatePermission(permissionId, request));
+          await this.loadPermissions();
+        });
       },
 
       async deletePermission(permissionId: string): Promise<void> {
-        patchState(store, { permissionsStatus: 'loading', permissionsError: null });
-
-        try {
+        await runMutation(store, async () => {
           await firstValueFrom(roleService.deletePermission(permissionId));
-          patchState(store, {
-            permissions: store.permissions().filter((permission) => permission.id !== permissionId),
-            permissionsStatus: 'loaded',
-            permissionsError: null,
-          });
-        } catch (error) {
-          patchState(store, {
-            permissionsStatus: 'failed',
-            permissionsError: describeRbacError(error),
-          });
-        }
+          await this.loadPermissions();
+        });
+      },
+
+      async assignPermission(roleId: string, permissionId: string): Promise<void> {
+        await runMutation(store, async () => {
+          await firstValueFrom(roleService.assignPermission(roleId, permissionId));
+          await this.loadRoles();
+        });
+      },
+
+      async removePermission(roleId: string, permissionId: string): Promise<void> {
+        await runMutation(store, async () => {
+          await firstValueFrom(roleService.removePermission(roleId, permissionId));
+          await this.loadRoles();
+        });
       },
     }),
   ),
 );
 
+function upsertById<T extends { id: string }>(items: readonly T[], item: T): readonly T[] {
+  return items.some((existing) => existing.id === item.id)
+    ? items.map((existing) => (existing.id === item.id ? item : existing))
+    : [...items, item];
+}
+
+async function runMutation(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  store: any,
+  work: () => Promise<unknown>,
+): Promise<void> {
+  patchState(store, { mutationStatus: 'saving', error: null });
+
+  try {
+    await work();
+    patchState(store, { mutationStatus: 'idle' });
+  } catch (error) {
+    patchState(store, { mutationStatus: 'failed', error: describeRbacError(error) });
+  }
+}
+
+function patchFailure(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  store: any,
+  state: Partial<RbacState>,
+  error: unknown,
+): void {
+  patchState(store, { ...state, error: describeRbacError(error) });
+}
+
 function describeRbacError(error: unknown): string {
+  if (isHttpErrorLike(error) && error.status === 401) {
+    return 'rbac.errors.unauthorized';
+  }
+
   if (isHttpErrorLike(error) && error.status === 403) {
-    return 'You do not have permission to manage this tenant RBAC data.';
+    return 'rbac.errors.forbidden';
+  }
+
+  if (isHttpErrorLike(error) && error.status === 400) {
+    return 'rbac.errors.validation';
   }
 
   if (error instanceof Error) {
     return error.message;
   }
 
-  return 'RBAC request failed.';
+  return 'rbac.errors.requestFailed';
 }
 
 function isHttpErrorLike(error: unknown): error is { status: number } {

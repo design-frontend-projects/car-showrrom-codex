@@ -24,7 +24,13 @@ type UserWithRoles = User & {
     name: string;
   };
   roles: {
-    role: Role;
+    role: Role & {
+      permissions: {
+        permission: {
+          action: string;
+        };
+      }[];
+    };
   }[];
 };
 
@@ -42,6 +48,7 @@ export interface AuthUserDto {
   phone: string | null;
   avatarUrl: string | null;
   roles: string[];
+  permissions: string[];
   twoFactorEnabled: boolean;
   twoFactorRequired: boolean;
 }
@@ -66,6 +73,7 @@ export interface CurrentProfileDto {
     name: string;
   };
   roles: string[];
+  permissions: string[];
   twoFactorEnabled: boolean;
   twoFactorRequired: boolean;
   lastLoginAt: string | null;
@@ -578,7 +586,15 @@ async function loadSessionRecord(tx: AuthTransactionClient, sessionToken: string
           tenant: true,
           roles: {
             include: {
-              role: true,
+              role: {
+                include: {
+                  permissions: {
+                    include: {
+                      permission: true,
+                    },
+                  },
+                },
+              },
             },
           },
         },
@@ -658,7 +674,15 @@ async function findLoginUser(tx: AuthTransactionClient, email: string, tenantId?
       tenant: true,
       roles: {
         include: {
-          role: true,
+          role: {
+            include: {
+              permissions: {
+                include: {
+                  permission: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -672,7 +696,15 @@ async function loadUserForSession(tx: AuthTransactionClient, userId: string): Pr
       tenant: true,
       roles: {
         include: {
-          role: true,
+          role: {
+            include: {
+              permissions: {
+                include: {
+                  permission: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -812,6 +844,7 @@ function mapUser(user: UserWithRoles): AuthUserDto {
     phone: user.phone,
     avatarUrl: user.avatarUrl,
     roles: user.roles.map(({ role }) => role.name),
+    permissions: mapPermissions(user),
     twoFactorEnabled: user.twoFactorEnabled,
     twoFactorRequired: user.twoFactorRequired,
   };
@@ -831,12 +864,23 @@ function mapProfile(user: UserWithRoles): CurrentProfileDto {
       name: user.tenant.name,
     },
     roles: user.roles.map(({ role }) => role.name),
+    permissions: mapPermissions(user),
     twoFactorEnabled: user.twoFactorEnabled,
     twoFactorRequired: user.twoFactorRequired,
     lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
   };
+}
+
+function mapPermissions(user: UserWithRoles): string[] {
+  return Array.from(
+    new Set(
+      user.roles.flatMap(({ role }) =>
+        role.permissions.map(({ permission }) => permission.action),
+      ),
+    ),
+  );
 }
 
 function hashResetOtp(email: string, otp: string): string {

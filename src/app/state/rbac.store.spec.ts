@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { RoleService } from '../core/rbac/role.service';
+import { AuditService } from '../core/rbac/audit.service';
 import { TenantService } from '../core/rbac/tenant.service';
 import { UserService } from '../core/rbac/user.service';
 import { RbacSignalStore } from './rbac.store';
@@ -42,23 +43,35 @@ describe('RbacSignalStore', () => {
             ...userService,
             create: vi.fn(),
             update: vi.fn(),
-            delete: vi.fn(),
+            disable: vi.fn(),
+            enable: vi.fn(),
+            initiateReset: vi.fn(),
+            listInvitations: vi.fn(() => of([])),
+            invite: vi.fn(),
+            revokeInvitation: vi.fn(),
+            resendInvitation: vi.fn(),
           },
         },
         {
           provide: RoleService,
           useValue: {
             list: vi.fn(() => of([])),
-            initializeDefaults: vi.fn(() => of([])),
+            detail: vi.fn(),
             create: vi.fn(),
             update: vi.fn(),
             delete: vi.fn(),
             assignPermission: vi.fn(),
             removePermission: vi.fn(),
-            listPermissions: vi.fn(() => of([])),
+            listPermissions: vi.fn(() => of({ permissions: [], groups: [] })),
             createPermission: vi.fn(),
             updatePermission: vi.fn(),
             deletePermission: vi.fn(),
+          },
+        },
+        {
+          provide: AuditService,
+          useValue: {
+            list: vi.fn(() => of({ items: [], page: 1, pageSize: 25, total: 0 })),
           },
         },
       ],
@@ -77,6 +90,6 @@ describe('RbacSignalStore', () => {
 
     expect(store.users()).toEqual([user]);
     expect(store.usersStatus()).toBe('failed');
-    expect(store.usersError()).toBe('You do not have permission to manage this tenant RBAC data.');
+    expect(store.error()).toBe('rbac.errors.forbidden');
   });
 });

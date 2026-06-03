@@ -19,12 +19,11 @@ describe('RBAC services', () => {
     const service = new UserService(api);
 
     service.list().subscribe();
-    service.list({ search: 'admin', includeInactive: true }).subscribe();
+    service.list({ state: 'disabled' }).subscribe();
 
-    expect(api.get).toHaveBeenNthCalledWith(1, '/rbac/users');
-    expect(api.get).toHaveBeenNthCalledWith(2, '/rbac/users', {
-      search: 'admin',
-      includeInactive: true,
+    expect(api.get).toHaveBeenNthCalledWith(1, '/admin/rbac/users');
+    expect(api.get).toHaveBeenNthCalledWith(2, '/admin/rbac/users', {
+      state: 'disabled',
     });
   });
 
@@ -33,11 +32,11 @@ describe('RBAC services', () => {
     const service = new RoleService(api);
 
     service.list().subscribe();
-    service.listPermissions({ search: 'manage' }).subscribe();
+    service.listPermissions().subscribe();
     service.assignPermission('role-id', 'permission-id').subscribe();
 
-    expect(api.get).toHaveBeenNthCalledWith(1, '/rbac/roles');
-    expect(api.get).toHaveBeenNthCalledWith(2, '/rbac/permissions', { search: 'manage' });
-    expect(api.post).toHaveBeenCalledWith('/rbac/roles/role-id/permissions/permission-id', {});
+    expect(api.get).toHaveBeenNthCalledWith(1, '/admin/rbac/roles');
+    expect(api.get).toHaveBeenNthCalledWith(2, '/admin/rbac/permissions');
+    expect(api.post).toHaveBeenCalledWith('/admin/rbac/roles/role-id/permissions/permission-id', {});
   });
 });

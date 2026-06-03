@@ -9,6 +9,7 @@ export interface AuthUser {
   phone: string | null;
   avatarUrl: string | null;
   roles: readonly string[];
+  permissions: readonly string[];
   twoFactorEnabled: boolean;
   twoFactorRequired: boolean;
 }
@@ -33,6 +34,7 @@ export interface CurrentProfile {
     name: string;
   };
   roles: readonly string[];
+  permissions: readonly string[];
   twoFactorEnabled: boolean;
   twoFactorRequired: boolean;
   lastLoginAt: string | null;

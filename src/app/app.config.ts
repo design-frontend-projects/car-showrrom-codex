@@ -1,4 +1,4 @@
-import { ApplicationConfig, inject, provideAppInitializer, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { ApplicationConfig, importProvidersFrom, inject, provideAppInitializer, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
@@ -10,6 +10,22 @@ import { firstValueFrom } from 'rxjs';
 import Aura from '@primeuix/themes/aura';
 import { providePrimeNG } from 'primeng/config';
 import { MessageService } from 'primeng/api';
+import {
+  Activity,
+  Check,
+  KeyRound,
+  LockKeyhole,
+  LucideAngularModule,
+  Pencil,
+  RefreshCw,
+  RotateCcw,
+  Save,
+  ShieldCheck,
+  Trash2,
+  UserPlus,
+  Users,
+  X,
+} from 'lucide-angular';
 
 import { routes } from './app.routes';
 import { environment } from '../environments/environment';
@@ -39,6 +55,23 @@ export const appConfig: ApplicationConfig = {
         }
       }
     }),
+    importProvidersFrom(
+      LucideAngularModule.pick({
+        Activity,
+        Check,
+        KeyRound,
+        LockKeyhole,
+        Pencil,
+        RefreshCw,
+        RotateCcw,
+        Save,
+        ShieldCheck,
+        Trash2,
+        UserPlus,
+        Users,
+        X,
+      }),
+    ),
     provideTranslateService({
       fallbackLang: environment.i18n.fallbackLang,
       lang: environment.i18n.defaultLang,
