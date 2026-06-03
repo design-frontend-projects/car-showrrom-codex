@@ -28,6 +28,11 @@ model Tenant {
   carMakes        CarMake[]
   carModels       CarModel[]
   carVariants     CarVariant[]
+  vehicleEngines  VehicleEngine[]
+  vehicleTransmissions VehicleTransmission[]
+  vehicleFuelTypes VehicleFuelType[]
+  vehicleBodyTypes VehicleBodyType[]
+  vehicleConditions VehicleCondition[]
   carColors       CarColor[]
   carListings     CarListing[]
   listingImages   CarListingImage[]
@@ -365,6 +370,10 @@ model CarVariant {
   id             String              @id @default(uuid()) @db.Uuid
   tenantId       String              @map("tenant_id") @db.Uuid
   modelId        String              @map("model_id") @db.Uuid
+  engineId       String?             @map("engine_id") @db.Uuid
+  transmissionId String?             @map("transmission_id") @db.Uuid
+  fuelTypeId     String?             @map("fuel_type_id") @db.Uuid
+  bodyTypeId     String?             @map("body_type_id") @db.Uuid
   name           String
   normalizedName String              @map("normalized_name")
   bodyType       CarBodyType         @map("body_type")
@@ -376,11 +385,19 @@ model CarVariant {
   updatedAt      DateTime            @updatedAt @map("updated_at")
   tenant         Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   model          CarModel            @relation(fields: [tenantId, modelId], references: [tenantId, id], onDelete: Cascade)
+  engine         VehicleEngine?      @relation(fields: [tenantId, engineId], references: [tenantId, id], onDelete: NoAction)
+  transmissionCatalog VehicleTransmission? @relation(fields: [tenantId, transmissionId], references: [tenantId, id], onDelete: NoAction)
+  fuelTypeCatalog VehicleFuelType?   @relation(fields: [tenantId, fuelTypeId], references: [tenantId, id], onDelete: NoAction)
+  bodyTypeCatalog VehicleBodyType?   @relation(fields: [tenantId, bodyTypeId], references: [tenantId, id], onDelete: NoAction)
   listings       CarListing[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, modelId, normalizedName])
   @@index([tenantId, modelId])
+  @@index([tenantId, engineId])
+  @@index([tenantId, transmissionId])
+  @@index([tenantId, fuelTypeId])
+  @@index([tenantId, bodyTypeId])
   @@index([tenantId, bodyType, fuelType, transmission])
   @@index([tenantId, isActive])
   @@map("car_variants")
@@ -404,6 +421,116 @@ model CarColor {
   @@map("car_colors")
 }
 
+model VehicleEngine {
+  id             String       @id @default(uuid()) @db.Uuid
+  tenantId       String       @map("tenant_id") @db.Uuid
+  name           String
+  normalizedName String       @map("normalized_name")
+  code           String?
+  description    String?
+  localizedNames Json         @default("{}") @map("localized_names")
+  isActive       Boolean      @default(true) @map("is_active")
+  sortOrder      Int          @default(0) @map("sort_order")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  variants       CarVariant[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, normalizedName])
+  @@unique([tenantId, code])
+  @@index([tenantId, isActive, sortOrder])
+  @@map("vehicle_engines")
+}
+
+model VehicleTransmission {
+  id             String       @id @default(uuid()) @db.Uuid
+  tenantId       String       @map("tenant_id") @db.Uuid
+  name           String
+  normalizedName String       @map("normalized_name")
+  code           String?
+  description    String?
+  localizedNames Json         @default("{}") @map("localized_names")
+  isActive       Boolean      @default(true) @map("is_active")
+  sortOrder      Int          @default(0) @map("sort_order")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  variants       CarVariant[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, normalizedName])
+  @@unique([tenantId, code])
+  @@index([tenantId, isActive, sortOrder])
+  @@map("vehicle_transmissions")
+}
+
+model VehicleFuelType {
+  id             String       @id @default(uuid()) @db.Uuid
+  tenantId       String       @map("tenant_id") @db.Uuid
+  name           String
+  normalizedName String       @map("normalized_name")
+  code           String?
+  description    String?
+  localizedNames Json         @default("{}") @map("localized_names")
+  isActive       Boolean      @default(true) @map("is_active")
+  sortOrder      Int          @default(0) @map("sort_order")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  variants       CarVariant[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, normalizedName])
+  @@unique([tenantId, code])
+  @@index([tenantId, isActive, sortOrder])
+  @@map("vehicle_fuel_types")
+}
+
+model VehicleBodyType {
+  id             String       @id @default(uuid()) @db.Uuid
+  tenantId       String       @map("tenant_id") @db.Uuid
+  name           String
+  normalizedName String       @map("normalized_name")
+  code           String?
+  description    String?
+  localizedNames Json         @default("{}") @map("localized_names")
+  isActive       Boolean      @default(true) @map("is_active")
+  sortOrder      Int          @default(0) @map("sort_order")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  variants       CarVariant[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, normalizedName])
+  @@unique([tenantId, code])
+  @@index([tenantId, isActive, sortOrder])
+  @@map("vehicle_body_types")
+}
+
+model VehicleCondition {
+  id             String       @id @default(uuid()) @db.Uuid
+  tenantId       String       @map("tenant_id") @db.Uuid
+  name           String
+  normalizedName String       @map("normalized_name")
+  code           String?
+  description    String?
+  localizedNames Json         @default("{}") @map("localized_names")
+  isActive       Boolean      @default(true) @map("is_active")
+  sortOrder      Int          @default(0) @map("sort_order")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  listings       CarListing[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, normalizedName])
+  @@unique([tenantId, code])
+  @@index([tenantId, isActive, sortOrder])
+  @@map("vehicle_conditions")
+}
+
 model CarListing {
   id                    String              @id @default(uuid()) @db.Uuid
   tenantId              String              @map("tenant_id") @db.Uuid
@@ -411,6 +538,7 @@ model CarListing {
   makeId                String              @map("make_id") @db.Uuid
   modelId               String              @map("model_id") @db.Uuid
   variantId             String              @map("variant_id") @db.Uuid
+  conditionId           String?             @map("condition_id") @db.Uuid
   exteriorColorId       String?             @map("exterior_color_id") @db.Uuid
   interiorColorId       String?             @map("interior_color_id") @db.Uuid
   title                 String
@@ -436,6 +564,7 @@ model CarListing {
   make                  CarMake             @relation(fields: [tenantId, makeId], references: [tenantId, id], onDelete: Restrict)
   model                 CarModel            @relation(fields: [tenantId, modelId], references: [tenantId, id], onDelete: Restrict)
   variant               CarVariant          @relation(fields: [tenantId, variantId], references: [tenantId, id], onDelete: Restrict)
+  conditionCatalog      VehicleCondition?   @relation(fields: [tenantId, conditionId], references: [tenantId, id], onDelete: NoAction)
   exteriorColor         CarColor?           @relation("ExteriorColor", fields: [tenantId, exteriorColorId], references: [tenantId, id], onDelete: NoAction)
   interiorColor         CarColor?           @relation("InteriorColor", fields: [tenantId, interiorColorId], references: [tenantId, id], onDelete: NoAction)
   images                CarListingImage[]
@@ -449,6 +578,7 @@ model CarListing {
   @@index([tenantId, status, mileage])
   @@index([tenantId, sellerUserId, status])
   @@index([tenantId, makeId, modelId, variantId])
+  @@index([tenantId, conditionId])
   @@index([tenantId, location])
   @@index([updatedAt])
   @@map("car_listings")

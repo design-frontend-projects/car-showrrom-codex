@@ -6,6 +6,11 @@ import type {
   CarModelHistory,
   CarPriceHistory,
   CarVariant,
+  VehicleBodyType,
+  VehicleCondition,
+  VehicleEngine,
+  VehicleFuelType,
+  VehicleTransmission,
   User,
   VehicleRequest,
 } from '../../generated/prisma/client';
@@ -121,10 +126,63 @@ export function mapVariant(variant: CarVariant): Record<string, unknown> {
     id: variant.id,
     modelId: variant.modelId,
     name: variant.name,
+    engineId: 'engineId' in variant ? variant.engineId : null,
+    transmissionId: 'transmissionId' in variant ? variant.transmissionId : null,
+    fuelTypeId: 'fuelTypeId' in variant ? variant.fuelTypeId : null,
+    bodyTypeId: 'bodyTypeId' in variant ? variant.bodyTypeId : null,
     bodyType: variant.bodyType,
     fuelType: variant.fuelType,
     transmission: variant.transmission,
     driveTrain: variant.driveTrain,
+  };
+}
+
+export function mapVehicleDefinitionCatalog(
+  item: VehicleEngine | VehicleTransmission | VehicleFuelType | VehicleBodyType | VehicleCondition,
+): Record<string, unknown> {
+  return {
+    id: item.id,
+    name: item.name,
+    code: item.code,
+    description: item.description,
+    localizedNames: item.localizedNames,
+    isActive: item.isActive,
+    sortOrder: item.sortOrder,
+    createdAt: item.createdAt.toISOString(),
+    updatedAt: item.updatedAt.toISOString(),
+  };
+}
+
+export function mapAdminUserRoles(user: {
+  id: string;
+  tenantId: string;
+  email: string;
+  displayName: string;
+  phone: string | null;
+  avatarUrl: string | null;
+  isActive: boolean;
+  lastLoginAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  roles: { role: { id: string; name: string; description: string | null; isSystem: boolean } }[];
+}): Record<string, unknown> {
+  return {
+    id: user.id,
+    tenantId: user.tenantId,
+    email: user.email,
+    displayName: user.displayName,
+    phone: user.phone,
+    avatarUrl: user.avatarUrl,
+    isActive: user.isActive,
+    lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
+    createdAt: user.createdAt.toISOString(),
+    updatedAt: user.updatedAt.toISOString(),
+    roles: user.roles.map(({ role }) => ({
+      id: role.id,
+      name: role.name,
+      description: role.description,
+      isSystem: role.isSystem,
+    })),
   };
 }
 

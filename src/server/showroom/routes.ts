@@ -13,7 +13,9 @@ import {
   addListingImage,
   createAdminVehicle,
   createListing,
+  createVehicleDefinition,
   createVehicleRequest,
+  deactivateVehicleDefinition,
   deleteListing,
   deleteListingImage,
   getAdminVehicle,
@@ -21,6 +23,8 @@ import {
   getPublicListing,
   listAdminVehicles,
   listAdminVehicleRequests,
+  listUsersAndRoles,
+  listVehicleDefinitions,
   listClientListings,
   listClientVehicleRequests,
   listMakes,
@@ -34,6 +38,7 @@ import {
   transitionAdminVehicleStatus,
   transitionListingStatus,
   updateAdminVehicle,
+  updateVehicleDefinition,
   updateListing,
 } from './services';
 import {
@@ -41,15 +46,23 @@ import {
   adminVehicleQuerySchema,
   adminVehicleUpdateSchema,
   adminRequestQuerySchema,
+  catalogDefinitionSchema,
   imageMetadataSchema,
   imageOrderSchema,
   listingInputSchema,
   listingStatusSchema,
   listingUpdateSchema,
+  makeDefinitionSchema,
+  modelDefinitionSchema,
   parseShowroomPayload,
   requestInputSchema,
   requestReviewSchema,
   searchQuerySchema,
+  trimDefinitionSchema,
+  usersRolesQuerySchema,
+  vehicleDefinitionEntitySchema,
+  vehicleDefinitionQuerySchema,
+  type VehicleDefinitionEntity,
 } from './validation';
 
 type AsyncRoute = (request: Request, response: Response) => Promise<void>;
@@ -378,6 +391,88 @@ export function registerShowroomRoutes(app: Express): void {
   );
 
   router.get(
+    '/admin/users-roles',
+    handle(async (request, response) => {
+      const tenantId = readPublicTenantId(request);
+      const query = parseShowroomPayload(usersRolesQuerySchema, request.query);
+      const result = await withRbacDatabaseContext({ tenantId, bypassTenantIsolation: false }, async (tx) => {
+        const context = await requireShowroomContext(request, tx, SHOWROOM_PERMISSIONS.adminManage);
+
+        return listUsersAndRoles(tx, context, query);
+      });
+
+      response.json(result);
+    }),
+  );
+
+  router.get(
+    '/admin/definitions/:entity',
+    handle(async (request, response) => {
+      const tenantId = readPublicTenantId(request);
+      const entity = readDefinitionEntity(request);
+      const query = parseShowroomPayload(vehicleDefinitionQuerySchema, request.query);
+      const result = await withRbacDatabaseContext({ tenantId, bypassTenantIsolation: false }, async (tx) => {
+        const context = await requireShowroomContext(request, tx, SHOWROOM_PERMISSIONS.adminManage);
+
+        return listVehicleDefinitions(tx, context, entity, query);
+      });
+
+      response.json(result);
+    }),
+  );
+
+  router.post(
+    '/admin/definitions/:entity',
+    mutationLimiter,
+    handle(async (request, response) => {
+      const tenantId = readPublicTenantId(request);
+      const entity = readDefinitionEntity(request);
+      const body = parseVehicleDefinitionBody(entity, request.body);
+      const result = await withRbacDatabaseContext({ tenantId, bypassTenantIsolation: false }, async (tx) => {
+        const context = await requireShowroomContext(request, tx, SHOWROOM_PERMISSIONS.adminManage);
+
+        return createVehicleDefinition(tx, context, entity, body);
+      });
+
+      response.status(201).json(result);
+    }),
+  );
+
+  router.patch(
+    '/admin/definitions/:entity/:definitionId',
+    mutationLimiter,
+    handle(async (request, response) => {
+      const tenantId = readPublicTenantId(request);
+      const entity = readDefinitionEntity(request);
+      const definitionId = requireParam(request, 'definitionId');
+      const body = parseVehicleDefinitionBody(entity, request.body);
+      const result = await withRbacDatabaseContext({ tenantId, bypassTenantIsolation: false }, async (tx) => {
+        const context = await requireShowroomContext(request, tx, SHOWROOM_PERMISSIONS.adminManage);
+
+        return updateVehicleDefinition(tx, context, entity, definitionId, body);
+      });
+
+      response.json(result);
+    }),
+  );
+
+  router.delete(
+    '/admin/definitions/:entity/:definitionId',
+    mutationLimiter,
+    handle(async (request, response) => {
+      const tenantId = readPublicTenantId(request);
+      const entity = readDefinitionEntity(request);
+      const definitionId = requireParam(request, 'definitionId');
+      await withRbacDatabaseContext({ tenantId, bypassTenantIsolation: false }, async (tx) => {
+        const context = await requireShowroomContext(request, tx, SHOWROOM_PERMISSIONS.adminManage);
+        await deactivateVehicleDefinition(tx, context, entity, definitionId);
+      });
+
+      response.status(204).end();
+    }),
+  );
+
+  router.get(
     '/admin/vehicles/:listingId',
     handle(async (request, response) => {
       const tenantId = readPublicTenantId(request);
@@ -601,6 +696,27 @@ function requireParam(request: Request, name: string): string {
   }
 
   return value;
+}
+
+function readDefinitionEntity(request: Request): VehicleDefinitionEntity {
+  return parseShowroomPayload(vehicleDefinitionEntitySchema, requireParam(request, 'entity'));
+}
+
+function parseVehicleDefinitionBody(entity: VehicleDefinitionEntity, body: unknown) {
+  switch (entity) {
+    case 'makes':
+      return parseShowroomPayload(makeDefinitionSchema, body);
+    case 'models':
+      return parseShowroomPayload(modelDefinitionSchema, body);
+    case 'trims':
+      return parseShowroomPayload(trimDefinitionSchema, body);
+    case 'engines':
+    case 'transmissions':
+    case 'fuel-types':
+    case 'body-types':
+    case 'conditions':
+      return parseShowroomPayload(catalogDefinitionSchema, body);
+  }
 }
 
 async function requireShowroomCsrf(

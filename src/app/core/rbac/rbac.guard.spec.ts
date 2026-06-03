@@ -39,6 +39,11 @@ function createAuth(user: { roles: string[]; permissions: string[] }) {
   return {
     isAuthenticated: vi.fn(() => true),
     loadSession: vi.fn(async () => undefined),
+    canAccessAdmin: vi.fn(
+      () =>
+        user.permissions.includes('showroom.admin.manage') ||
+        user.roles.map((role) => role.trim().toLowerCase()).some((role) => role === 'admin' || role === 'system-owner'),
+    ),
     user: vi.fn(() => ({
       id: 'user-id',
       tenantId: 'tenant-id',

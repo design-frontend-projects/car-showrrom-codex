@@ -9,6 +9,7 @@ describe('admin showroom vehicle services', () => {
     userId: '00000000-0000-0000-0000-000000000002',
     bypassTenantIsolation: false,
     permissions: new Set([SHOWROOM_PERMISSIONS.adminManage]),
+    roles: new Set(['admin']),
   };
 
   it('creates published admin vehicles without checking the client active-listing limit', async () => {

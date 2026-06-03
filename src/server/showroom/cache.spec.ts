@@ -1,7 +1,9 @@
 import { CarListingCondition } from '../../generated/prisma/client';
 import {
   clearVehicleInventoryCounterCache,
+  getCachedVehicleCatalogList,
   getCachedVehicleInventoryCounters,
+  invalidateVehicleCatalogCache,
   invalidateVehicleInventoryCounters,
 } from './cache';
 import type { ShowroomTx } from './repositories';
@@ -43,5 +45,17 @@ describe('vehicle inventory counter cache', () => {
 
     expect(refreshed.newCars).toBe(2);
     expect(groupBy).toHaveBeenCalledTimes(2);
+  });
+
+  it('caches tenant catalog lists and invalidates affected entries', async () => {
+    const loader = vi.fn().mockResolvedValueOnce(['first']).mockResolvedValueOnce(['second']);
+
+    await expect(getCachedVehicleCatalogList(tenantId, 'definitions:makes:{}', loader)).resolves.toEqual(['first']);
+    await expect(getCachedVehicleCatalogList(tenantId, 'definitions:makes:{}', loader)).resolves.toEqual(['first']);
+
+    invalidateVehicleCatalogCache(tenantId);
+
+    await expect(getCachedVehicleCatalogList(tenantId, 'definitions:makes:{}', loader)).resolves.toEqual(['second']);
+    expect(loader).toHaveBeenCalledTimes(2);
   });
 });

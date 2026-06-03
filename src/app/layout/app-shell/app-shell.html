@@ -47,7 +47,7 @@
         <p-button icon="pi pi-bars" severity="secondary" [text]="true" class="menu-trigger" (onClick)="openDrawer()" />
       }
       @if (canManageRbac()) {
-        <a routerLink="/admin/rbac/users" class="admin-link">{{ 'rbac.nav.workspace' | translate }}</a>
+        <a routerLink="/admin" class="admin-link">{{ 'admin.nav.module' | translate }}</a>
       } @else if (canReviewRequests()) {
         <a routerLink="/admin/requests" class="admin-link">{{ 'admin.title' | translate }}</a>
       }
@@ -89,7 +89,7 @@
         <a [routerLink]="item.route" (click)="closeDrawer()">{{ item.labelKey | translate }}</a>
       }
       @if (canManageRbac()) {
-        <a routerLink="/admin/rbac/users" (click)="closeDrawer()">{{ 'rbac.nav.workspace' | translate }}</a>
+        <a routerLink="/admin" (click)="closeDrawer()">{{ 'admin.nav.module' | translate }}</a>
       } @else if (canReviewRequests()) {
         <a routerLink="/admin/requests" (click)="closeDrawer()">{{ 'admin.title' | translate }}</a>
       }

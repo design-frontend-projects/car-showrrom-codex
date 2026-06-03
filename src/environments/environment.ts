@@ -5,6 +5,8 @@ export const environment = {
   auth: {
     csrfCookieName: 'cs_csrf',
     tenantStorageKey: 'car-showroom.tenant-id',
+    stateStorage: 'sessionStorage',
+    stateStorageKey: 'car-showroom.auth-state',
     unauthorizedRedirect: '/client/sign-in',
   },
   logging: {

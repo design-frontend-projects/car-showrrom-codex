@@ -5,6 +5,7 @@ import { ApiService } from '../http/api.service';
 import { AdminVehicleApiService } from './admin-vehicle-api.service';
 import { CatalogApiService } from './catalog-api.service';
 import { ClientListingApiService } from './client-listing-api.service';
+import { VehicleDefinitionApiService } from './vehicle-definition-api.service';
 import { VehicleRequestApiService } from './vehicle-request-api.service';
 
 describe('showroom Angular services', () => {
@@ -113,5 +114,37 @@ describe('showroom Angular services', () => {
       status: 'APPROVED',
       decisionNote: 'Looks good',
     });
+  });
+
+  it('uses admin vehicle definition and users-with-roles endpoints with query params', () => {
+    const api = apiMock();
+    TestBed.configureTestingModule({ providers: [{ provide: ApiService, useValue: api }] });
+    const service = TestBed.inject(VehicleDefinitionApiService);
+
+    service.list('models', { q: 'camry', includeInactive: true }).subscribe();
+    service.create('fuel-types', { name: 'Hybrid', code: 'HYBRID', isActive: true }).subscribe();
+    service.update('fuel-types', 'fuel-id', { name: 'Hybrid Electric' }).subscribe();
+    service.deactivate('fuel-types', 'fuel-id').subscribe();
+    service.usersRoles({ q: 'admin', role: 'admin', state: 'active' }).subscribe();
+
+    const definitionParams = vi.mocked(api.get).mock.calls[0]?.[1] as HttpParams;
+    const usersParams = vi.mocked(api.get).mock.calls[1]?.[1] as HttpParams;
+
+    expect(vi.mocked(api.get).mock.calls[0]?.[0]).toBe('/showroom/admin/definitions/models');
+    expect(definitionParams.get('q')).toBe('camry');
+    expect(definitionParams.get('includeInactive')).toBe('true');
+    expect(api.post).toHaveBeenCalledWith('/showroom/admin/definitions/fuel-types', {
+      name: 'Hybrid',
+      code: 'HYBRID',
+      isActive: true,
+    });
+    expect(api.patch).toHaveBeenCalledWith('/showroom/admin/definitions/fuel-types/fuel-id', {
+      name: 'Hybrid Electric',
+    });
+    expect(api.delete).toHaveBeenCalledWith('/showroom/admin/definitions/fuel-types/fuel-id');
+    expect(vi.mocked(api.get).mock.calls[1]?.[0]).toBe('/showroom/admin/users-roles');
+    expect(usersParams.get('q')).toBe('admin');
+    expect(usersParams.get('role')).toBe('admin');
+    expect(usersParams.get('state')).toBe('active');
   });
 });

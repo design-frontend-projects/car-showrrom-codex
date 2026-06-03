@@ -26,8 +26,9 @@ import { TourService } from '../../core/onboarding/tour.service';
       </div>
 
       <div class="button-row">
-        <p-button routerLink="/admin/vehicles" icon="pi pi-car" label="Manage vehicles" />
-        <p-button routerLink="/admin/vehicles/create" icon="pi pi-plus" label="Create vehicle" [outlined]="true" />
+        <p-button routerLink="/admin/vehicles" icon="pi pi-car" [label]="'admin.actions.manageVehicles' | translate" />
+        <p-button routerLink="/admin/definitions" icon="pi pi-list-check" [label]="'admin.definitions.title' | translate" [outlined]="true" />
+        <p-button routerLink="/admin/vehicles/create" icon="pi pi-plus" [label]="'admin.actions.createVehicle' | translate" [outlined]="true" />
         @if (canManageRbac()) {
           <a routerLink="/admin/rbac/users" class="rbac-admin-link">
             <lucide-icon name="shield-check" size="18" />

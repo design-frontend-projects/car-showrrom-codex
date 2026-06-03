@@ -21,6 +21,13 @@ export interface AuthSession {
   csrfToken?: string;
 }
 
+export interface PersistedAuthState {
+  status: 'authenticated';
+  session: AuthSession;
+  roles: readonly string[];
+  persistedAt: string;
+}
+
 export interface CurrentProfile {
   id: string;
   displayName: string;
@@ -124,4 +131,6 @@ export interface AuthState {
   error: string | null;
   fieldErrors: Record<string, string>;
   csrfToken: string | null;
+  hydratedFromStorage: boolean;
+  lastRoleRefreshAt: string | null;
 }

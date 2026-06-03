@@ -15,11 +15,11 @@ export function permissionGuard(requiredPermission: string): CanActivateFn {
   return () =>
     resolveGuard((auth) => {
       const user = auth.user();
-      console.log(user);
 
       return Boolean(
         user?.permissions.includes(requiredPermission) ||
-          user?.roles.some((role) => ADMIN_ROLES.has(role)),
+          user?.roles.some((role) => ADMIN_ROLES.has(role)) ||
+          auth.canAccessAdmin(),
       );
     });
 }

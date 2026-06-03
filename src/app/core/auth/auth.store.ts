@@ -3,6 +3,7 @@ import { patchState, signalStore, withComputed, withMethods, withState } from '@
 import { firstValueFrom } from 'rxjs';
 import { TenantContextService } from '../rbac/tenant-context.service';
 import { AuthApiService } from './auth-api.service';
+import { AuthPersistenceService } from './auth-persistence.service';
 import {
   AuthResponse,
   AuthSession,
@@ -26,6 +27,8 @@ const initialAuthState: AuthState = {
   error: null,
   fieldErrors: {},
   csrfToken: null,
+  hydratedFromStorage: false,
+  lastRoleRefreshAt: null,
 };
 
 export const AuthSignalStore = signalStore(
@@ -33,18 +36,34 @@ export const AuthSignalStore = signalStore(
   withState(initialAuthState),
   withComputed(({ session, status, challenge }) => ({
     user: computed(() => session()?.user ?? null),
+    normalizedRoles: computed(() => normalizeRoles(session()?.user.roles ?? [])),
+    isAdmin: computed(() => normalizeRoles(session()?.user.roles ?? []).includes('admin')),
+    isSystemOwner: computed(() => normalizeRoles(session()?.user.roles ?? []).includes('system-owner')),
+    canAccessAdmin: computed(() => {
+      const roles = normalizeRoles(session()?.user.roles ?? []);
+      const permissions = session()?.user.permissions ?? [];
+
+      return roles.includes('admin') || roles.includes('system-owner') || permissions.includes('showroom.admin.manage');
+    }),
     isAuthenticated: computed(() => status() === 'authenticated'),
     requiresTwoFactor: computed(() => status() === 'twoFactorRequired' && challenge() !== null),
   })),
-  withMethods((store, api = inject(AuthApiService), tenantContext = inject(TenantContextService)) => ({
+  withMethods((store, api = inject(AuthApiService), tenantContext = inject(TenantContextService), persistence = inject(AuthPersistenceService)) => ({
     async loadSession(): Promise<void> {
+      const persisted = persistence.read();
+
+      if (persisted) {
+        applySession(store, persisted.session, tenantContext, persistence, true);
+      }
+
       patchState(store, { status: 'pending', error: null, fieldErrors: {} });
 
       try {
-        applyAuthResponse(store, await firstValueFrom(api.session()), tenantContext);
+        applyAuthResponse(store, await firstValueFrom(api.session()), tenantContext, persistence);
       } catch (error) {
         patchState(store, { ...initialAuthState, error: describeAuthError(error) });
         tenantContext.clearSelectedTenantId();
+        persistence.clear();
       }
     },
 
@@ -66,7 +85,7 @@ export const AuthSignalStore = signalStore(
       patchState(store, { status: 'pending', error: null, fieldErrors: {} });
 
       try {
-        applyAuthResponse(store, await firstValueFrom(api.login(request)), tenantContext);
+        applyAuthResponse(store, await firstValueFrom(api.login(request)), tenantContext, persistence);
       } catch (error) {
         applyAuthError(store, error);
       }
@@ -76,7 +95,7 @@ export const AuthSignalStore = signalStore(
       patchState(store, { status: 'pending', error: null, fieldErrors: {} });
 
       try {
-        applySession(store, await firstValueFrom(api.register(request)), tenantContext);
+        applySession(store, await firstValueFrom(api.register(request)), tenantContext, persistence);
       } catch (error) {
         applyAuthError(store, error);
       }
@@ -84,10 +103,19 @@ export const AuthSignalStore = signalStore(
 
     async refresh(): Promise<void> {
       try {
-        applySession(store, await firstValueFrom(api.refresh()), tenantContext);
+        applySession(store, await firstValueFrom(api.refresh()), tenantContext, persistence);
       } catch (error) {
         patchState(store, { ...initialAuthState, error: describeAuthError(error) });
         tenantContext.clearSelectedTenantId();
+        persistence.clear();
+      }
+    },
+
+    async refreshRoles(): Promise<void> {
+      try {
+        applyAuthResponse(store, await firstValueFrom(api.session()), tenantContext, persistence);
+      } catch (error) {
+        patchState(store, { error: describeAuthError(error) });
       }
     },
 
@@ -98,7 +126,7 @@ export const AuthSignalStore = signalStore(
         const response = await firstValueFrom(api.verifyTwoFactor(request));
 
         if ('status' in response && response.status === 'authenticated') {
-          applySession(store, response, tenantContext);
+          applySession(store, response, tenantContext, persistence);
         } else {
           patchState(store, { status: store.session() ? 'authenticated' : 'anonymous' });
         }
@@ -122,7 +150,7 @@ export const AuthSignalStore = signalStore(
     async disableTwoFactor(request: TwoFactorDisableRequest): Promise<boolean> {
       try {
         await firstValueFrom(api.disableTwoFactor(request));
-        applyAuthResponse(store, await firstValueFrom(api.session()), tenantContext);
+        applyAuthResponse(store, await firstValueFrom(api.session()), tenantContext, persistence);
         return true;
       } catch (error) {
         applyAuthError(store, error);
@@ -157,6 +185,7 @@ export const AuthSignalStore = signalStore(
       } finally {
         patchState(store, initialAuthState);
         tenantContext.clearSelectedTenantId();
+        persistence.clear();
       }
     },
 
@@ -166,19 +195,26 @@ export const AuthSignalStore = signalStore(
       } finally {
         patchState(store, initialAuthState);
         tenantContext.clearSelectedTenantId();
+        persistence.clear();
       }
     },
 
     signOut(): void {
       patchState(store, initialAuthState);
       tenantContext.clearSelectedTenantId();
+      persistence.clear();
     },
   })),
 );
 
-function applyAuthResponse(store: WritableAuthStore, response: AuthResponse, tenantContext: TenantContextService): void {
+function applyAuthResponse(
+  store: WritableAuthStore,
+  response: AuthResponse,
+  tenantContext: TenantContextService,
+  persistence: AuthPersistenceService,
+): void {
   if (response.status === 'authenticated') {
-    applySession(store, response, tenantContext);
+    applySession(store, response, tenantContext, persistence);
     return;
   }
 
@@ -190,23 +226,42 @@ function applyAuthResponse(store: WritableAuthStore, response: AuthResponse, ten
       error: null,
       fieldErrors: {},
     });
+    persistence.clear();
     return;
   }
 
   patchState(store, initialAuthState);
   tenantContext.clearSelectedTenantId();
+  persistence.clear();
 }
 
-function applySession(store: WritableAuthStore, session: AuthSession, tenantContext: TenantContextService): void {
+function applySession(
+  store: WritableAuthStore,
+  session: AuthSession,
+  tenantContext: TenantContextService,
+  persistence: AuthPersistenceService,
+  hydratedFromStorage = false,
+): void {
+  const normalizedSession = {
+    ...session,
+    user: {
+      ...session.user,
+      roles: normalizeRoles(session.user.roles),
+    },
+  };
+
   patchState(store, {
     status: 'authenticated',
-    session,
+    session: normalizedSession,
     challenge: null,
     csrfToken: session.csrfToken ?? store.csrfToken(),
+    hydratedFromStorage,
+    lastRoleRefreshAt: new Date().toISOString(),
     error: null,
     fieldErrors: {},
   });
-  tenantContext.setSelectedTenantId(session.user.tenantId);
+  tenantContext.setSelectedTenantId(normalizedSession.user.tenantId);
+  persistence.write(normalizedSession);
 }
 
 function applyAuthError(store: WritableAuthStore, error: unknown, fallbackStatus: AuthState['status'] = 'failed'): void {
@@ -245,6 +300,10 @@ function isHttpError(error: unknown): error is { error?: { code?: unknown; field
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+export function normalizeRoles(roles: readonly string[]): string[] {
+  return Array.from(new Set(roles.map((role) => role.trim().toLowerCase()).filter(Boolean)));
 }
 
 // NgRx Signal Store produces an intersection type that is intentionally internal.

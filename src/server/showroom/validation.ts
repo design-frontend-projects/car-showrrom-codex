@@ -15,6 +15,18 @@ const optionalTextSchema = z.string().trim().max(500).optional().nullable();
 const moneySchema = z.coerce.number().finite().min(0).max(99_999_999);
 const yearSchema = z.coerce.number().int().min(1900).max(new Date().getFullYear() + 2);
 const mileageSchema = z.coerce.number().int().min(0).max(5_000_000);
+const localizedNamesSchema = z.record(z.string().min(2).max(12), z.string().trim().min(1).max(200)).default({});
+
+export const vehicleDefinitionEntitySchema = z.enum([
+  'makes',
+  'models',
+  'trims',
+  'engines',
+  'transmissions',
+  'fuel-types',
+  'body-types',
+  'conditions',
+]);
 
 export const searchQuerySchema = z
   .object({
@@ -140,6 +152,59 @@ export const adminVehicleInputSchema = listingInputSchema.extend({
 
 export const adminVehicleUpdateSchema = listingUpdateSchema;
 
+export const vehicleDefinitionQuerySchema = z.object({
+  q: z.string().trim().max(120).optional(),
+  includeInactive: z.coerce.boolean().default(true),
+});
+
+const definitionBaseSchema = z.object({
+  name: textSchema.max(120),
+  code: z.string().trim().min(1).max(80).optional().nullable(),
+  description: z.string().trim().max(500).optional().nullable(),
+  localizedNames: localizedNamesSchema.optional(),
+  isActive: z.coerce.boolean().optional(),
+  sortOrder: z.coerce.number().int().min(0).max(100_000).optional(),
+});
+
+export const makeDefinitionSchema = z.object({
+  name: textSchema.max(120),
+  country: z.string().trim().max(120).optional().nullable(),
+  isActive: z.coerce.boolean().optional(),
+});
+
+export const modelDefinitionSchema = z.object({
+  makeId: uuidSchema,
+  name: textSchema.max(120),
+  productionFrom: z.coerce.number().int().min(1886).max(new Date().getFullYear() + 5).optional().nullable(),
+  productionTo: z.coerce.number().int().min(1886).max(new Date().getFullYear() + 5).optional().nullable(),
+  isActive: z.coerce.boolean().optional(),
+}).refine((value) => !value.productionFrom || !value.productionTo || value.productionFrom <= value.productionTo, {
+  path: ['productionTo'],
+  message: 'showroom.validation.range',
+});
+
+export const trimDefinitionSchema = z.object({
+  modelId: uuidSchema,
+  name: textSchema.max(120),
+  engineId: uuidSchema.optional().nullable(),
+  transmissionId: uuidSchema.optional().nullable(),
+  fuelTypeId: uuidSchema.optional().nullable(),
+  bodyTypeId: uuidSchema.optional().nullable(),
+  bodyType: z.enum(CarBodyType).optional(),
+  fuelType: z.enum(CarFuelType).optional(),
+  transmission: z.enum(CarTransmissionType).optional(),
+  driveTrain: z.string().trim().max(120).optional().nullable(),
+  isActive: z.coerce.boolean().optional(),
+});
+
+export const catalogDefinitionSchema = definitionBaseSchema;
+
+export const usersRolesQuerySchema = z.object({
+  q: z.string().trim().max(120).optional(),
+  role: z.string().trim().max(80).optional(),
+  state: z.enum(['active', 'disabled', 'all']).default('all'),
+});
+
 export function parseShowroomPayload<T>(schema: z.ZodSchema<T>, payload: unknown): T {
   const result = schema.safeParse(payload);
 
@@ -167,3 +232,10 @@ export type RequestReviewInput = z.infer<typeof requestReviewSchema>;
 export type AdminVehicleQuery = z.infer<typeof adminVehicleQuerySchema>;
 export type AdminVehicleInput = z.infer<typeof adminVehicleInputSchema>;
 export type AdminVehicleUpdateInput = z.infer<typeof adminVehicleUpdateSchema>;
+export type VehicleDefinitionEntity = z.infer<typeof vehicleDefinitionEntitySchema>;
+export type VehicleDefinitionQuery = z.infer<typeof vehicleDefinitionQuerySchema>;
+export type MakeDefinitionInput = z.infer<typeof makeDefinitionSchema>;
+export type ModelDefinitionInput = z.infer<typeof modelDefinitionSchema>;
+export type TrimDefinitionInput = z.infer<typeof trimDefinitionSchema>;
+export type CatalogDefinitionInput = z.infer<typeof catalogDefinitionSchema>;
+export type UsersRolesQuery = z.infer<typeof usersRolesQuerySchema>;

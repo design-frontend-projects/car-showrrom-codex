@@ -60,13 +60,118 @@ export interface ShowroomColor extends ShowroomTaxonomyItem {
   hexCode?: string | null;
 }
 
+export interface VehicleDefinitionCatalogItem extends ShowroomTaxonomyItem {
+  code?: string | null;
+  description?: string | null;
+  localizedNames?: Record<string, string>;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AdminMakeDefinition extends ShowroomMake {
+  normalizedName: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminModelDefinition extends ShowroomModel {
+  normalizedName: string;
+  isActive: boolean;
+  make?: Pick<ShowroomMake, 'id' | 'name'>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminTrimDefinition extends ShowroomVariant {
+  normalizedName: string;
+  engineId?: string | null;
+  transmissionId?: string | null;
+  fuelTypeId?: string | null;
+  bodyTypeId?: string | null;
+  engine?: VehicleDefinitionCatalogItem | null;
+  transmissionCatalog?: VehicleDefinitionCatalogItem | null;
+  fuelTypeCatalog?: VehicleDefinitionCatalogItem | null;
+  bodyTypeCatalog?: VehicleDefinitionCatalogItem | null;
+  isActive: boolean;
+  model?: Pick<ShowroomModel, 'id' | 'name'> & { make?: Pick<ShowroomMake, 'id' | 'name'> };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type VehicleDefinitionEntity =
+  | 'makes'
+  | 'models'
+  | 'trims'
+  | 'engines'
+  | 'transmissions'
+  | 'fuel-types'
+  | 'body-types'
+  | 'conditions';
+
+export type VehicleDefinitionRecord =
+  | AdminMakeDefinition
+  | AdminModelDefinition
+  | AdminTrimDefinition
+  | VehicleDefinitionCatalogItem;
+
+export interface VehicleDefinitionQueryParams {
+  q?: string;
+  includeInactive?: boolean;
+}
+
+export interface VehicleDefinitionInputDto {
+  name: string;
+  country?: string | null;
+  makeId?: string;
+  modelId?: string;
+  productionFrom?: number | null;
+  productionTo?: number | null;
+  engineId?: string | null;
+  transmissionId?: string | null;
+  fuelTypeId?: string | null;
+  bodyTypeId?: string | null;
+  bodyType?: CarBodyType;
+  fuelType?: CarFuelType;
+  transmission?: CarTransmissionType;
+  driveTrain?: string | null;
+  code?: string | null;
+  description?: string | null;
+  localizedNames?: Record<string, string>;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
+export interface AdminUserRolesDto {
+  id: string;
+  tenantId: string;
+  email: string;
+  displayName: string;
+  phone?: string | null;
+  avatarUrl?: string | null;
+  isActive: boolean;
+  lastLoginAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  roles: { id: string; name: string; description?: string | null; isSystem: boolean }[];
+}
+
+export interface UsersRolesQueryParams {
+  q?: string;
+  role?: string;
+  state?: 'active' | 'disabled' | 'all';
+}
+
 export interface ShowroomTaxonomy {
   makes: ShowroomMake[];
   colors: ShowroomColor[];
-  bodyTypes: CarBodyType[];
-  fuelTypes: CarFuelType[];
-  transmissions: CarTransmissionType[];
-  conditions: CarListingCondition[];
+  bodyTypes: VehicleDefinitionCatalogItem[];
+  fuelTypes: VehicleDefinitionCatalogItem[];
+  transmissions: VehicleDefinitionCatalogItem[];
+  engines: VehicleDefinitionCatalogItem[];
+  conditions: VehicleDefinitionCatalogItem[];
 }
 
 export interface ListingImageDto {

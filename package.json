@@ -16,6 +16,7 @@
     "prisma:validate": "prisma validate",
     "prisma:migrate:dev": "prisma migrate dev",
     "prisma:setup": "pnpm run prisma:validate && pnpm run prisma:generate",
+    "schema:validate-vehicle-contract": "node scripts/validate-vehicle-schema.mjs",
     "verify:prisma": "pnpm run prisma:validate && pnpm run build:prod",
     "prebuild": "pnpm run prisma:generate",
     "prebuild:dev": "pnpm run prisma:generate",

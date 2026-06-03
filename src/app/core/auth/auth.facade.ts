@@ -23,6 +23,10 @@ export class AuthFacade {
   readonly fieldErrors = this.store.fieldErrors;
   readonly isAuthenticated = this.store.isAuthenticated;
   readonly requiresTwoFactor = this.store.requiresTwoFactor;
+  readonly normalizedRoles = this.store.normalizedRoles;
+  readonly isAdmin = this.store.isAdmin;
+  readonly isSystemOwner = this.store.isSystemOwner;
+  readonly canAccessAdmin = this.store.canAccessAdmin;
 
   loadSession(): Promise<void> {
     return this.store.loadSession();
@@ -38,6 +42,10 @@ export class AuthFacade {
 
   register(request: RegisterRequest): Promise<void> {
     return this.store.register(request);
+  }
+
+  refreshRoles(): Promise<void> {
+    return this.store.refreshRoles();
   }
 
   verifyTwoFactor(request: TwoFactorVerifyRequest) {

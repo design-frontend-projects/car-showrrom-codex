@@ -181,7 +181,133 @@
     "copy": "A structured shell for inventory control, lead review, and listing operations.",
     "inventory": "Active inventory",
     "leads": "Open leads",
-    "pending": "Pending approvals"
+    "pending": "Pending approvals",
+    "nav": {
+      "module": "Admin"
+    },
+    "actions": {
+      "manageVehicles": "Manage vehicles",
+      "createVehicle": "Create vehicle"
+    },
+    "definitions": {
+      "kicker": "Vehicle definitions",
+      "title": "Define vehicle data",
+      "copy": "Maintain the canonical make, model, trim, engine, transmission, fuel, body, and condition data used by vehicle forms.",
+      "back": "Back to definitions",
+      "search": "Search definitions",
+      "includeInactive": "Include inactive",
+      "confirmDeactivate": "Deactivate this vehicle definition?",
+      "entities": {
+        "makes": {
+          "title": "Car makes",
+          "copy": "Create and maintain manufacturer records."
+        },
+        "models": {
+          "title": "Car models",
+          "copy": "Link models to makes with production year metadata."
+        },
+        "trims": {
+          "title": "Trims",
+          "copy": "Define trim and variant records with engine and drivetrain attributes."
+        },
+        "engines": {
+          "title": "Engines",
+          "copy": "Maintain engine catalog values for trims."
+        },
+        "transmissions": {
+          "title": "Transmissions",
+          "copy": "Maintain transmission catalog values."
+        },
+        "fuelTypes": {
+          "title": "Fuel types",
+          "copy": "Maintain fuel type catalog values."
+        },
+        "bodyTypes": {
+          "title": "Body types",
+          "copy": "Maintain body style catalog values."
+        },
+        "conditions": {
+          "title": "Conditions",
+          "copy": "Maintain listing condition catalog values."
+        }
+      },
+      "fields": {
+        "actions": "Actions",
+        "active": "Active",
+        "bodyType": "Body type",
+        "code": "Code",
+        "country": "Country",
+        "description": "Description",
+        "driveTrain": "Drivetrain",
+        "engine": "Engine",
+        "fuelType": "Fuel type",
+        "make": "Make",
+        "metadata": "Metadata",
+        "model": "Model",
+        "name": "Name",
+        "productionFrom": "Production from",
+        "productionTo": "Production to",
+        "sortOrder": "Sort order",
+        "status": "Status",
+        "transmission": "Transmission"
+      },
+      "actions": {
+        "cancel": "Cancel",
+        "create": "Create",
+        "delete": "Deactivate",
+        "edit": "Edit",
+        "filter": "Filter",
+        "save": "Save"
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "states": {
+        "empty": "No definitions match this view.",
+        "loading": "Loading definitions"
+      },
+      "validation": {
+        "required": "This field is required."
+      },
+      "errors": {
+        "delete": "Definition could not be deactivated.",
+        "load": "Definitions could not be loaded.",
+        "save": "Definition could not be saved."
+      },
+      "announcements": {
+        "created": "Definition created.",
+        "deleted": "Definition deactivated.",
+        "failed": "Definition action failed.",
+        "updated": "Definition updated."
+      }
+    },
+    "usersRoles": {
+      "kicker": "Admin utility",
+      "title": "Users and roles",
+      "copy": "Review tenant users and their role membership. Role editing is intentionally unavailable here.",
+      "search": "Search users",
+      "roleFilter": "Role",
+      "stateFilter": "State",
+      "all": "All",
+      "active": "Active",
+      "disabled": "Disabled",
+      "never": "Never",
+      "noRoles": "No roles",
+      "fields": {
+        "lastLogin": "Last login",
+        "roles": "Roles",
+        "status": "Status",
+        "user": "User"
+      },
+      "states": {
+        "empty": "No users match this view.",
+        "loading": "Loading users and roles"
+      },
+      "errors": {
+        "load": "Users and roles could not be loaded."
+      }
+    }
   },
   "client": {
     "kicker": "Customer workspace",
@@ -417,6 +543,7 @@
       "invalidImageType": "Upload a JPG, PNG, or WebP image.",
       "invalidMediaPath": "The media path is invalid.",
       "invalidTaxonomy": "Choose a valid make, model, and variant combination.",
+      "definitionEntity": "Choose a valid vehicle definition type.",
       "listingNotFound": "Listing is unavailable.",
       "mediaNotFound": "Media is unavailable.",
       "rateLimited": "Too many showroom requests. Try again later.",

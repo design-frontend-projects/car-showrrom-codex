@@ -11,7 +11,10 @@ import { ShowroomHttpError } from './errors';
 
 export interface ShowroomContext extends RbacRequestContext {
   permissions: Set<string>;
+  roles: Set<string>;
 }
+
+const ADMIN_ROLE_KEYS = new Set(['admin', 'system-owner']);
 
 export async function requireShowroomContext(
   request: Request,
@@ -20,15 +23,21 @@ export async function requireShowroomContext(
 ): Promise<ShowroomContext> {
   try {
     const context = await requireRbacRequestContext(request);
-    const permissions = await readUserPermissions(tx, context.tenantId, context.userId);
+    const access = await readUserAccess(tx, context.tenantId, context.userId);
 
-    if (requiredPermission && !permissions.has(requiredPermission) && !permissions.has(SHOWROOM_PERMISSIONS.adminManage)) {
+    if (
+      requiredPermission &&
+      !access.permissions.has(requiredPermission) &&
+      !access.permissions.has(SHOWROOM_PERMISSIONS.adminManage) &&
+      !hasAdminRole(access.roles)
+    ) {
       throw new ShowroomHttpError(403, 'showroom.error.accessDenied');
     }
 
     return {
       ...context,
-      permissions,
+      permissions: access.permissions,
+      roles: access.roles,
     };
   } catch (error) {
     if (error instanceof ShowroomHttpError) {
@@ -56,30 +65,52 @@ export function readPublicTenantId(request: Request): string {
 }
 
 export function canAdminShowroom(context: ShowroomContext): boolean {
-  return context.permissions.has(SHOWROOM_PERMISSIONS.adminManage);
+  return context.permissions.has(SHOWROOM_PERMISSIONS.adminManage) || hasAdminRole(context.roles);
 }
 
-async function readUserPermissions(
+function hasAdminRole(roles: Set<string>): boolean {
+  return Array.from(roles).some((role) => ADMIN_ROLE_KEYS.has(normalizeRoleName(role)));
+}
+
+export function normalizeRoleName(role: string): string {
+  return role.trim().toLowerCase();
+}
+
+async function readUserAccess(
   tx: Prisma.TransactionClient,
   tenantId: string,
   userId: string,
-): Promise<Set<string>> {
-  const rolePermissions = await tx.rolePermission.findMany({
-    where: {
-      tenantId,
-      role: {
-        users: {
-          some: {
-            tenantId,
-            userId,
+): Promise<{ permissions: Set<string>; roles: Set<string> }> {
+  const [rolePermissions, userRoles] = await Promise.all([
+    tx.rolePermission.findMany({
+      where: {
+        tenantId,
+        role: {
+          users: {
+            some: {
+              tenantId,
+              userId,
+            },
           },
         },
       },
-    },
-    include: {
-      permission: true,
-    },
-  });
+      include: {
+        permission: true,
+      },
+    }),
+    tx.userRole.findMany({
+      where: {
+        tenantId,
+        userId,
+      },
+      include: {
+        role: true,
+      },
+    }),
+  ]);
 
-  return new Set(rolePermissions.map(({ permission }) => permission.action));
+  return {
+    permissions: new Set(rolePermissions.map(({ permission }) => permission.action)),
+    roles: new Set(userRoles.map(({ role }) => normalizeRoleName(role.name))),
+  };
 }
