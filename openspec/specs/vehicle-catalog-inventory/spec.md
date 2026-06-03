@@ -132,6 +132,14 @@ The system SHALL cache static vehicle definition lists with tenant-aware keys an
 - **WHEN** an admin creates, updates, deletes, or deactivates a vehicle definition record
 - **THEN** affected list and dependent dropdown cache entries are invalidated before the next response
 
+#### Scenario: Cache option list
+- **WHEN** an option list is loaded for a tenant, entity, query, dependency, and active-state policy
+- **THEN** the cache key includes those values so unrelated tenants or dependencies do not share results
+
+#### Scenario: Invalidate definition cache
+- **WHEN** an administrator creates, updates, or deactivates a vehicle definition record
+- **THEN** cache entries for the affected tenant and definition entity are invalidated before later option requests reuse cached data
+
 ### Requirement: Vehicle definition referential integrity
 The system SHALL prevent destructive changes to vehicle definition records that are referenced by active listings or child catalog records unless the operation is a supported deactivation.
 
@@ -142,3 +150,74 @@ The system SHALL prevent destructive changes to vehicle definition records that 
 #### Scenario: Referenced attribute deletion is blocked
 - **WHEN** an admin attempts to delete an engine, transmission, fuel type, body type, or condition referenced by trims or listings
 - **THEN** the server blocks hard deletion and returns a localized referential integrity error or performs a documented deactivation flow
+
+### Requirement: Canonical vehicle option sources
+The system SHALL source vehicle dropdown and multi-select values from Prisma-backed vehicle definition models and listing relationships.
+
+#### Scenario: Read canonical option models
+- **WHEN** a vehicle form, filter, or definition workflow requests makes, models, trims, engines, transmissions, fuel types, body types, conditions, exterior colors, or interior colors
+- **THEN** the server reads from the corresponding tenant-scoped Prisma models and returns Angular-safe DTOs
+
+#### Scenario: Reject missing canonical option
+- **WHEN** a vehicle mutation references an option that does not exist for the active tenant
+- **THEN** the server MUST reject the mutation before creating or updating the listing
+
+### Requirement: Tenant-aware dependent option endpoints
+The system SHALL expose tenant-scoped option queries for parent-child vehicle definition relationships.
+
+#### Scenario: Fetch models for make
+- **WHEN** a client requests models with a make identifier
+- **THEN** the server returns only active models for that make and tenant
+
+#### Scenario: Fetch trims for model
+- **WHEN** a client requests trims with a model identifier
+- **THEN** the server returns only active trims for that model and tenant
+
+#### Scenario: Include selected inactive option for editing
+- **WHEN** an edit form requests options with a selected inactive identifier
+- **THEN** the server may include that selected record with inactive metadata so the UI can display existing persisted data safely
+
+### Requirement: Consistent new and used inventory grouping
+The system SHALL apply one server-side definition of new and used vehicle grouping across routes, counters, search results, and admin workflows.
+
+#### Scenario: Count and route grouping align
+- **WHEN** a listing's condition or active status changes
+- **THEN** public Used Cars results, New Cars results, and inventory counters reflect the same new/used grouping after cache invalidation or expiry
+
+### Requirement: Side-specific listing color relationships
+The system SHALL persist listing exterior and interior colors through side-specific tenant-scoped catalog relationships.
+
+#### Scenario: Persist listing color relationships
+- **WHEN** a listing is created or updated with valid exterior and interior color IDs
+- **THEN** the database stores `exteriorColorId` against the exterior color catalog and `interiorColorId` against the interior color catalog for the same tenant
+
+#### Scenario: Reject cross-tenant color reference
+- **WHEN** a listing mutation references an exterior or interior color from another tenant
+- **THEN** the system MUST reject the mutation before the listing is created or updated
+
+#### Scenario: Preserve color display names
+- **WHEN** a listing is saved with selected color definitions
+- **THEN** the system stores display-name fallbacks for exterior and interior colors so listing cards and details remain readable after catalog edits
+
+### Requirement: Optimized color catalog queries
+The system SHALL fetch color catalogs with tenant-scoped filters and indexes suitable for admin definition screens and vehicle editor dropdowns.
+
+#### Scenario: Query active color catalogs
+- **WHEN** the vehicle editor requests active color options
+- **THEN** the server queries exterior and interior color tables by tenant, active state, sort order, and name using indexed access patterns
+
+#### Scenario: Invalidate color catalog cache
+- **WHEN** an admin creates, updates, or deactivates an exterior or interior color definition
+- **THEN** the system invalidates affected tenant taxonomy and definition caches before subsequent list or dropdown requests
+
+### Requirement: Legacy color data migration
+The system SHALL migrate existing generic color references to side-specific exterior and interior color catalog records without losing listing readability.
+
+#### Scenario: Backfill exterior color references
+- **WHEN** an existing listing has a generic exterior color reference before migration
+- **THEN** migration creates or maps a matching exterior color definition and keeps the listing exterior color label available
+
+#### Scenario: Backfill interior color references
+- **WHEN** an existing listing has a generic interior color reference before migration
+- **THEN** migration creates or maps a matching interior color definition and keeps the listing interior color label available
+

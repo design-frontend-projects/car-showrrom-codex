@@ -1,4 +1,4 @@
-import { HttpEventType, HttpResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpEventType, HttpResponse } from '@angular/common/http';
 import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -15,8 +15,8 @@ import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
 import { firstValueFrom } from 'rxjs';
 import { AdminVehicleApiService } from '../../../core/showroom/admin-vehicle-api.service';
-import { CatalogApiService } from '../../../core/showroom/catalog-api.service';
 import {
+  AdminVehicleEditorResolvedData,
   AdminVehicleImageQueueItem,
   CarBodyType,
   CarFuelType,
@@ -25,9 +25,13 @@ import {
   CarTransmissionType,
   ListingDetailDto,
   ListingImageDto,
-  ShowroomTaxonomy,
+  ShowroomMake,
+  ShowroomModel,
+  ShowroomVariant,
+  VehicleDefinitionCatalogItem,
   VehicleColorDefinition,
 } from '../../../core/showroom/showroom.models';
+import { VehicleOptionLoaderService } from '../../../core/showroom/vehicle-option-loader.service';
 import { formatCurrency, formatMileage } from '../../../utils/number-format.util';
 import {
   ADMIN_FEATURES,
@@ -73,7 +77,7 @@ import {
             <div class="form-grid">
               <label>
                 <span>Make</span>
-                <p-select [options]="taxonomy()?.makes ?? []" optionLabel="name" optionValue="id" formControlName="makeId" placeholder="Select make" (onChange)="resetModel()" />
+                <p-select [options]="makes()" optionLabel="name" optionValue="id" formControlName="makeId" placeholder="Select make" (onChange)="resetModel()" />
               </label>
               <label>
                 <span>Model</span>
@@ -125,15 +129,15 @@ import {
               </label>
               <label>
                 <span>Transmission</span>
-                <p-select [options]="transmissionOptions" optionLabel="label" optionValue="value" formControlName="transmission" />
+                <p-select [options]="transmissions()" optionLabel="name" optionValue="code" formControlName="transmission" />
               </label>
               <label>
                 <span>Fuel type</span>
-                <p-select [options]="fuelOptions" optionLabel="label" optionValue="value" formControlName="fuelType" />
+                <p-select [options]="fuelTypes()" optionLabel="name" optionValue="code" formControlName="fuelType" />
               </label>
               <label>
                 <span>Body type</span>
-                <p-select [options]="bodyOptions" optionLabel="label" optionValue="value" formControlName="bodyType" />
+                <p-select [options]="bodyTypes()" optionLabel="name" optionValue="code" formControlName="bodyType" />
               </label>
               <label>
                 <span>Mileage</span>
@@ -141,7 +145,7 @@ import {
               </label>
               <label>
                 <span>Condition</span>
-                <p-select [options]="conditionOptions" optionLabel="label" optionValue="value" formControlName="condition" />
+                <p-select [options]="conditions()" optionLabel="name" optionValue="code" formControlName="condition" />
               </label>
               <label>
                 <span>{{ 'admin.vehicleEditor.fields.exteriorColor' | translate }}</span>
@@ -563,10 +567,10 @@ import {
 })
 export class AdminVehicleEditorPage implements OnInit {
   private readonly api = inject(AdminVehicleApiService);
-  private readonly catalog = inject(CatalogApiService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder);
   private readonly messages = inject(MessageService);
+  private readonly optionLoader = inject(VehicleOptionLoaderService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly translate = inject(TranslateService);
@@ -574,7 +578,15 @@ export class AdminVehicleEditorPage implements OnInit {
   readonly loading = signal(false);
   readonly submitting = signal(false);
   readonly attemptedSubmit = signal(false);
-  readonly taxonomy = signal<ShowroomTaxonomy | null>(null);
+  readonly makes = signal<ShowroomMake[]>([]);
+  readonly models = signal<ShowroomModel[]>([]);
+  readonly variants = signal<ShowroomVariant[]>([]);
+  readonly conditions = signal<VehicleDefinitionCatalogItem[]>([]);
+  readonly fuelTypes = signal<VehicleDefinitionCatalogItem[]>([]);
+  readonly transmissions = signal<VehicleDefinitionCatalogItem[]>([]);
+  readonly bodyTypes = signal<VehicleDefinitionCatalogItem[]>([]);
+  readonly exteriorColors = signal<VehicleColorDefinition[]>([]);
+  readonly interiorColors = signal<VehicleColorDefinition[]>([]);
   readonly listing = signal<ListingDetailDto | null>(null);
   readonly queuedImages = signal<AdminVehicleImageQueueItem[]>([]);
   readonly existingImages = signal<ListingImageDto[]>([]);
@@ -614,22 +626,18 @@ export class AdminVehicleEditorPage implements OnInit {
   readonly formValue = signal<AdminVehicleFormValue>(this.readFormValue());
 
   readonly selectedModels = computed(() => {
-    const makeId = this.formValue().makeId;
-
-    return this.taxonomy()?.makes.find((make) => make.id === makeId)?.models ?? [];
+    return this.models();
   });
 
   readonly selectedVariants = computed(() => {
-    const modelId = this.formValue().modelId;
-
-    return this.selectedModels().find((model) => model.id === modelId)?.variants ?? [];
+    return this.variants();
   });
 
   readonly selectedLabels = computed(() => {
     const value = this.formValue();
-    const make = this.taxonomy()?.makes.find((item) => item.id === value.makeId);
-    const model = make?.models?.find((item) => item.id === value.modelId);
-    const variant = model?.variants?.find((item) => item.id === value.variantId);
+    const make = this.makes().find((item) => item.id === value.makeId);
+    const model = this.models().find((item) => item.id === value.modelId);
+    const variant = this.variants().find((item) => item.id === value.variantId);
 
     return {
       make: make?.name,
@@ -666,17 +674,6 @@ export class AdminVehicleEditorPage implements OnInit {
     { label: 'Archived', value: 'ARCHIVED' },
   ];
 
-  readonly conditionOptions: { label: string; value: CarListingCondition }[] = [
-    { label: 'New', value: 'NEW' },
-    { label: 'Certified', value: 'CERTIFIED_PRE_OWNED' },
-    { label: 'Used', value: 'USED' },
-    { label: 'Damaged', value: 'DAMAGED' },
-  ];
-
-  readonly fuelOptions = enumOptions<CarFuelType>(['PETROL', 'DIESEL', 'HYBRID', 'PLUG_IN_HYBRID', 'ELECTRIC', 'LPG', 'OTHER']);
-  readonly transmissionOptions = enumOptions<CarTransmissionType>(['AUTOMATIC', 'MANUAL', 'CVT', 'DUAL_CLUTCH', 'OTHER']);
-  readonly bodyOptions = enumOptions<CarBodyType>(['SEDAN', 'SUV', 'COUPE', 'HATCHBACK', 'CONVERTIBLE', 'WAGON', 'PICKUP', 'VAN', 'CROSSOVER', 'OTHER']);
-
   constructor() {
     this.form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.formValue.set(this.readFormValue());
@@ -688,12 +685,15 @@ export class AdminVehicleEditorPage implements OnInit {
     this.loading.set(true);
 
     try {
-      const taxonomy = await firstValueFrom(this.catalog.taxonomy());
-      const listing = this.listingId()
-        ? await firstValueFrom(this.api.detail(this.listingId() as string))
-        : null;
+      const resolved = this.route.snapshot.data['adminVehicleEditorData'] as AdminVehicleEditorResolvedData | undefined;
 
-      this.taxonomy.set(taxonomy);
+      if (resolved?.error) {
+        throw new Error(resolved.error);
+      }
+
+      const listing = resolved?.listing ?? null;
+      this.applyResolvedOptions(resolved);
+
       if (listing) {
         this.listing.set(listing);
         this.existingImages.set(listing.images);
@@ -713,10 +713,15 @@ export class AdminVehicleEditorPage implements OnInit {
 
   resetModel(): void {
     this.form.patchValue({ modelId: '', variantId: '' });
+    this.models.set([]);
+    this.variants.set([]);
+    void this.loadModels();
   }
 
   resetVariant(): void {
     this.form.patchValue({ variantId: '' });
+    this.variants.set([]);
+    void this.loadVariants();
   }
 
   syncVariantSpecs(): void {
@@ -734,8 +739,7 @@ export class AdminVehicleEditorPage implements OnInit {
   }
 
   colorOptions(side: 'exterior' | 'interior'): VehicleColorDefinition[] {
-    const taxonomy = this.taxonomy();
-    const base = side === 'exterior' ? taxonomy?.exteriorColors ?? [] : taxonomy?.interiorColors ?? [];
+    const base = side === 'exterior' ? this.exteriorColors() : this.interiorColors();
     const selectedId = side === 'exterior' ? this.form.controls.exteriorColorId.value : this.form.controls.interiorColorId.value;
     const listing = this.listing();
 
@@ -860,7 +864,8 @@ export class AdminVehicleEditorPage implements OnInit {
         detail: `${listing.title} is ready in admin inventory.`,
       });
       await this.router.navigateByUrl('/admin/vehicles');
-    } catch {
+    } catch (error) {
+      this.projectServerFieldErrors(error);
       this.messages.add({
         severity: 'error',
         summary: 'Save failed',
@@ -953,16 +958,88 @@ export class AdminVehicleEditorPage implements OnInit {
       interiorColorName: raw.interiorColorId ? this.colorLabel(interiorColor) : '',
     };
   }
-}
 
-function enumOptions<T extends string>(values: T[]): { label: string; value: T }[] {
-  return values.map((value) => ({
-    value,
-    label: value
-      .toLowerCase()
-      .split('_')
-      .filter(Boolean)
-      .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
-      .join(' '),
-  }));
+  private applyResolvedOptions(resolved: AdminVehicleEditorResolvedData | undefined): void {
+    this.makes.set(resolved?.options.makes ?? []);
+    this.models.set(resolved?.options.models ?? []);
+    this.variants.set(resolved?.options.trims ?? []);
+    this.conditions.set(resolved?.options.conditions ?? []);
+    this.fuelTypes.set(resolved?.options.fuelTypes ?? []);
+    this.transmissions.set(resolved?.options.transmissions ?? []);
+    this.bodyTypes.set(resolved?.options.bodyTypes ?? []);
+    this.exteriorColors.set(resolved?.options.exteriorColors ?? []);
+    this.interiorColors.set(resolved?.options.interiorColors ?? []);
+  }
+
+  private async loadModels(): Promise<void> {
+    const makeId = this.form.controls.makeId.value;
+
+    if (!makeId) {
+      return;
+    }
+
+    const state = await firstValueFrom(
+      this.optionLoader.load<ShowroomModel>(
+        {
+          key: 'admin-editor-models',
+          entity: 'models',
+          parentKeys: ['makeId'],
+          parentParamMap: { makeId: 'makeId' },
+          includeInactive: this.isEditMode(),
+        },
+        { makeId },
+        '',
+        this.form.controls.modelId.value,
+      ),
+    );
+
+    if (state.status !== 'stale') {
+      this.models.set(state.items);
+    }
+  }
+
+  private async loadVariants(): Promise<void> {
+    const modelId = this.form.controls.modelId.value;
+
+    if (!modelId) {
+      return;
+    }
+
+    const state = await firstValueFrom(
+      this.optionLoader.load<ShowroomVariant>(
+        {
+          key: 'admin-editor-trims',
+          entity: 'trims',
+          parentKeys: ['modelId'],
+          parentParamMap: { modelId: 'modelId' },
+          includeInactive: this.isEditMode(),
+        },
+        { modelId },
+        '',
+        this.form.controls.variantId.value,
+      ),
+    );
+
+    if (state.status !== 'stale') {
+      this.variants.set(state.items);
+    }
+  }
+
+  private projectServerFieldErrors(error: unknown): void {
+    if (!(error instanceof HttpErrorResponse)) {
+      return;
+    }
+
+    const fieldErrors = error.error?.fieldErrors as Record<string, string> | undefined;
+
+    if (!fieldErrors) {
+      return;
+    }
+
+    for (const [field, message] of Object.entries(fieldErrors)) {
+      const control = this.form.get(field);
+      control?.setErrors({ server: message });
+      control?.markAsTouched();
+    }
+  }
 }

@@ -10,6 +10,9 @@ import {
   CarListingStatus,
   ListingDetailDto,
   ListingImageDto,
+  VehicleOptionEntity,
+  VehicleOptionQueryParams,
+  VehicleOptionResult,
 } from './showroom.models';
 
 @Injectable({ providedIn: 'root' })
@@ -19,6 +22,13 @@ export class AdminVehicleApiService {
 
   list(params: AdminVehicleListParams = {}): Observable<AdminVehicleListResult> {
     return this.api.get<AdminVehicleListResult>('/showroom/admin/vehicles', toParams(params));
+  }
+
+  options<T extends { id: string; name: string }>(
+    entity: VehicleOptionEntity,
+    params: VehicleOptionQueryParams = {},
+  ): Observable<VehicleOptionResult<T>> {
+    return this.api.get<VehicleOptionResult<T>>(`/showroom/options/${entity}`, toParams(params));
   }
 
   detail(listingId: string): Observable<ListingDetailDto> {

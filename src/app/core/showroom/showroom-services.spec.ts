@@ -1,12 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpParams } from '@angular/common/http';
-import { of } from 'rxjs';
+import { firstValueFrom, of } from 'rxjs';
 import { ApiService } from '../http/api.service';
 import { AdminVehicleApiService } from './admin-vehicle-api.service';
 import { CatalogApiService } from './catalog-api.service';
 import { ClientListingApiService } from './client-listing-api.service';
 import { VehicleDefinitionApiService } from './vehicle-definition-api.service';
 import { VehicleRequestApiService } from './vehicle-request-api.service';
+import { VehicleOptionLoaderService } from './vehicle-option-loader.service';
 
 describe('showroom Angular services', () => {
   function apiMock(): ApiService {
@@ -146,5 +147,30 @@ describe('showroom Angular services', () => {
     expect(usersParams.get('q')).toBe('admin');
     expect(usersParams.get('role')).toBe('admin');
     expect(usersParams.get('state')).toBe('active');
+  });
+
+  it('loads dependent option data through declarative loader config', async () => {
+    const catalog = {
+      options: vi.fn(() => of({ items: [{ id: 'model-id', name: 'Model', makeId: 'make-id' }], total: 1 })),
+    };
+    TestBed.configureTestingModule({ providers: [{ provide: CatalogApiService, useValue: catalog }] });
+    const loader = TestBed.inject(VehicleOptionLoaderService);
+
+    const state = await firstValueFrom(
+      loader.load(
+        {
+          key: 'test-models',
+          entity: 'models',
+          parentKeys: ['makeId'],
+          parentParamMap: { makeId: 'makeId' },
+          debounceMs: 0,
+        },
+        { makeId: 'make-id' },
+      ),
+    );
+
+    expect(state.status).toBe('loaded');
+    expect(state.items).toEqual([expect.objectContaining({ id: 'model-id' })]);
+    expect(catalog.options).toHaveBeenCalledWith('models', expect.objectContaining({ makeId: 'make-id' }));
   });
 });

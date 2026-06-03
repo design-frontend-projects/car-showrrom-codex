@@ -30,6 +30,18 @@ export type CarBodyType =
   | 'CROSSOVER'
   | 'OTHER';
 export type VehicleRequestStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
+export type VehicleInventoryScope = 'new' | 'used';
+export type VehicleOptionEntity =
+  | 'makes'
+  | 'models'
+  | 'trims'
+  | 'engines'
+  | 'transmissions'
+  | 'fuel-types'
+  | 'body-types'
+  | 'conditions'
+  | 'exterior-colors'
+  | 'interior-colors';
 
 export interface ShowroomTaxonomyItem {
   id: string;
@@ -134,6 +146,39 @@ export type VehicleDefinitionRecord =
 export interface VehicleDefinitionQueryParams {
   q?: string;
   includeInactive?: boolean;
+  active?: 'active' | 'inactive' | 'all';
+  makeId?: string;
+  modelId?: string;
+  sortBy?: 'name' | 'createdAt' | 'updatedAt' | 'sortOrder' | 'isActive';
+  sortDirection?: 'asc' | 'desc';
+  minSortOrder?: number;
+  maxSortOrder?: number;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface PaginatedResult<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  total: number;
+  pageCount: number;
+}
+
+export type VehicleDefinitionListResult = PaginatedResult<VehicleDefinitionRecord>;
+
+export interface VehicleOptionQueryParams {
+  q?: string;
+  includeInactive?: boolean;
+  selectedId?: string;
+  makeId?: string;
+  modelId?: string;
+  limit?: number;
+}
+
+export interface VehicleOptionResult<T extends ShowroomTaxonomyItem = ShowroomTaxonomyItem> {
+  items: T[];
+  total: number;
 }
 
 export interface VehicleDefinitionInputDto {
@@ -240,6 +285,7 @@ export interface ListingDetailDto extends ListingSummaryDto {
 }
 
 export interface ListingSearchParams {
+  inventoryScope?: VehicleInventoryScope;
   q?: string;
   makeId?: string;
   modelId?: string;
@@ -267,6 +313,54 @@ export interface ListingSearchResult {
   pageSize: number;
   total: number;
   pageCount: number;
+}
+
+export interface CatalogRouteResolvedData {
+  scope: VehicleInventoryScope;
+  error?: string | null;
+  results: ListingSearchResult;
+  options: {
+    makes: ShowroomMake[];
+    conditions: VehicleDefinitionCatalogItem[];
+    bodyTypes: VehicleDefinitionCatalogItem[];
+    fuelTypes: VehicleDefinitionCatalogItem[];
+    transmissions: VehicleDefinitionCatalogItem[];
+    exteriorColors: VehicleColorDefinition[];
+    interiorColors: VehicleColorDefinition[];
+  };
+}
+
+export interface AdminVehicleOverviewResolvedData {
+  error?: string | null;
+  result: AdminVehicleListResult;
+  conditions: VehicleDefinitionCatalogItem[];
+}
+
+export interface AdminVehicleEditorResolvedData {
+  error?: string | null;
+  listing: ListingDetailDto | null;
+  options: {
+    makes: ShowroomMake[];
+    models: ShowroomModel[];
+    trims: ShowroomVariant[];
+    conditions: VehicleDefinitionCatalogItem[];
+    engines: VehicleDefinitionCatalogItem[];
+    transmissions: VehicleDefinitionCatalogItem[];
+    fuelTypes: VehicleDefinitionCatalogItem[];
+    bodyTypes: VehicleDefinitionCatalogItem[];
+    exteriorColors: VehicleColorDefinition[];
+    interiorColors: VehicleColorDefinition[];
+  };
+}
+
+export interface DefinitionEntityResolvedData {
+  error?: string | null;
+  result: VehicleDefinitionListResult;
+}
+
+export interface ShowroomFieldErrorResponse {
+  code: string;
+  fieldErrors?: Record<string, string>;
 }
 
 export interface ListingInputDto {

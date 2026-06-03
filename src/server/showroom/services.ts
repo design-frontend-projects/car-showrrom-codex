@@ -32,6 +32,7 @@ import {
 import { ShowroomHttpError } from './errors';
 import {
   adminListingPreviewInclude,
+  buildActiveListingWhere,
   buildAdminListingWhere,
   findAdminListingById,
   listingDetailInclude,
@@ -47,6 +48,7 @@ import {
   type ColorDefinitionInput,
   type ListingInput,
   type ListingUpdateInput,
+  type OptionQuery,
   type MakeDefinitionInput,
   type ModelDefinitionInput,
   type RequestReviewInput,
@@ -113,21 +115,22 @@ export async function listTaxonomy(tx: ShowroomTx, tenantId: string): Promise<un
 }
 
 export async function listMakes(tx: ShowroomTx, tenantId: string): Promise<unknown[]> {
-  const makes = await tx.carMake.findMany({
-    where: { tenantId, isActive: true },
-    orderBy: { name: 'asc' },
+  const result = await listVehicleOptions(tx, tenantId, 'makes', {
+    includeInactive: false,
+    limit: 100,
   });
 
-  return makes.map(mapMake);
+  return result.items;
 }
 
 export async function listModels(tx: ShowroomTx, tenantId: string, makeId?: string): Promise<unknown[]> {
-  const models = await tx.carModel.findMany({
-    where: { tenantId, isActive: true, ...(makeId ? { makeId } : {}) },
-    orderBy: { name: 'asc' },
+  const result = await listVehicleOptions(tx, tenantId, 'models', {
+    includeInactive: false,
+    makeId,
+    limit: 100,
   });
 
-  return models.map(mapModel);
+  return result.items;
 }
 
 export async function listVariants(
@@ -135,12 +138,98 @@ export async function listVariants(
   tenantId: string,
   modelId?: string,
 ): Promise<unknown[]> {
-  const variants = await tx.carVariant.findMany({
-    where: { tenantId, isActive: true, ...(modelId ? { modelId } : {}) },
-    orderBy: { name: 'asc' },
+  const result = await listVehicleOptions(tx, tenantId, 'trims', {
+    includeInactive: false,
+    modelId,
+    limit: 100,
   });
 
-  return variants.map(mapVariant);
+  return result.items;
+}
+
+export async function listVehicleOptions(
+  tx: ShowroomTx,
+  tenantId: string,
+  entity: VehicleDefinitionEntity,
+  query: OptionQuery,
+): Promise<{ items: unknown[]; total: number }> {
+  return getCachedVehicleCatalogList(
+    tenantId,
+    `options:${entity}:${stableCacheKey(query)}`,
+    async () => {
+      const where = optionWhere(tenantId, query);
+
+      switch (entity) {
+        case 'makes': {
+          const [items, total] = await Promise.all([
+            tx.carMake.findMany({
+              where,
+              orderBy: { name: 'asc' },
+              take: query.limit,
+            }),
+            tx.carMake.count({ where }),
+          ]);
+
+          return { items: items.map(mapMake), total };
+        }
+        case 'models': {
+          const scopedWhere = { ...where, ...(query.makeId ? { makeId: query.makeId } : {}) };
+          const [items, total] = await Promise.all([
+            tx.carModel.findMany({
+              where: scopedWhere,
+              orderBy: { name: 'asc' },
+              take: query.limit,
+            }),
+            tx.carModel.count({ where: scopedWhere }),
+          ]);
+
+          return { items: items.map(mapModel), total };
+        }
+        case 'trims': {
+          const scopedWhere = { ...where, ...(query.modelId ? { modelId: query.modelId } : {}) };
+          const [items, total] = await Promise.all([
+            tx.carVariant.findMany({
+              where: scopedWhere,
+              orderBy: { name: 'asc' },
+              take: query.limit,
+            }),
+            tx.carVariant.count({ where: scopedWhere }),
+          ]);
+
+          return { items: items.map(mapVariant), total };
+        }
+        case 'engines':
+        case 'transmissions':
+        case 'fuel-types':
+        case 'body-types':
+        case 'conditions': {
+          const [items, total] = await Promise.all([
+            catalogDelegate(tx, entity).findMany({
+              where,
+              orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+              take: query.limit,
+            }),
+            catalogDelegate(tx, entity).count({ where }),
+          ]);
+
+          return { items: items.map(mapVehicleDefinitionCatalog), total };
+        }
+        case 'exterior-colors':
+        case 'interior-colors': {
+          const [items, total] = await Promise.all([
+            colorDelegate(tx, entity).findMany({
+              where,
+              orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+              take: query.limit,
+            }),
+            colorDelegate(tx, entity).count({ where }),
+          ]);
+
+          return { items: items.map(mapVehicleColorDefinition), total };
+        }
+      }
+    },
+  );
 }
 
 export async function listUsersAndRoles(
@@ -198,49 +287,87 @@ export async function listVehicleDefinitions(
   context: ShowroomContext,
   entity: VehicleDefinitionEntity,
   query: VehicleDefinitionQuery,
-): Promise<unknown[]> {
+): Promise<{ items: unknown[]; page: number; pageSize: number; total: number; pageCount: number }> {
   assertAdminVehiclePermission(context);
 
   return getCachedVehicleCatalogList(context.tenantId, `definitions:${entity}:${JSON.stringify(query)}`, async () => {
+    const skip = (query.page - 1) * query.pageSize;
+    const orderBy = definitionOrderBy(entity, query);
+    const where = definitionWhere(context.tenantId, entity, query);
+
     switch (entity) {
-      case 'makes':
-        return (
-          await tx.carMake.findMany({
-            where: definitionWhere(context.tenantId, query),
-            orderBy: [{ isActive: 'desc' }, { name: 'asc' }],
-          })
-        ).map(mapMakeDefinition);
-      case 'models':
-        return (
-          await tx.carModel.findMany({
-            where: definitionWhere(context.tenantId, query),
-            orderBy: [{ isActive: 'desc' }, { name: 'asc' }],
+      case 'makes': {
+        const [items, total] = await Promise.all([
+          tx.carMake.findMany({
+            where,
+            orderBy,
+            skip,
+            take: query.pageSize,
+          }),
+          tx.carMake.count({ where }),
+        ]);
+
+        return paginated(items.map(mapMakeDefinition), query, total);
+      }
+      case 'models': {
+        const [items, total] = await Promise.all([
+          tx.carModel.findMany({
+            where,
+            orderBy,
+            skip,
+            take: query.pageSize,
             include: { make: true },
-          })
-        ).map(mapModelDefinition);
-      case 'trims':
-        return (
-          await tx.carVariant.findMany({
-            where: definitionWhere(context.tenantId, query),
-            orderBy: [{ isActive: 'desc' }, { name: 'asc' }],
+          }),
+          tx.carModel.count({ where }),
+        ]);
+
+        return paginated(items.map(mapModelDefinition), query, total);
+      }
+      case 'trims': {
+        const [items, total] = await Promise.all([
+          tx.carVariant.findMany({
+            where,
+            orderBy,
+            skip,
+            take: query.pageSize,
             include: { model: { include: { make: true } }, engine: true, transmissionCatalog: true, fuelTypeCatalog: true, bodyTypeCatalog: true },
-          })
-        ).map(mapTrimDefinition);
+          }),
+          tx.carVariant.count({ where }),
+        ]);
+
+        return paginated(items.map(mapTrimDefinition), query, total);
+      }
       case 'engines':
       case 'transmissions':
       case 'fuel-types':
       case 'body-types':
-      case 'conditions':
-        return (await catalogDelegate(tx, entity).findMany({
-          where: definitionWhere(context.tenantId, query),
-          orderBy: [{ isActive: 'desc' }, { sortOrder: 'asc' }, { name: 'asc' }],
-        })).map(mapVehicleDefinitionCatalog);
+      case 'conditions': {
+        const [items, total] = await Promise.all([
+          catalogDelegate(tx, entity).findMany({
+            where,
+            orderBy,
+            skip,
+            take: query.pageSize,
+          }),
+          catalogDelegate(tx, entity).count({ where }),
+        ]);
+
+        return paginated(items.map(mapVehicleDefinitionCatalog), query, total);
+      }
       case 'exterior-colors':
-      case 'interior-colors':
-        return (await colorDelegate(tx, entity).findMany({
-          where: definitionWhere(context.tenantId, query),
-          orderBy: [{ isActive: 'desc' }, { sortOrder: 'asc' }, { name: 'asc' }],
-        })).map(mapVehicleColorDefinition);
+      case 'interior-colors': {
+        const [items, total] = await Promise.all([
+          colorDelegate(tx, entity).findMany({
+            where,
+            orderBy,
+            skip,
+            take: query.pageSize,
+          }),
+          colorDelegate(tx, entity).count({ where }),
+        ]);
+
+        return paginated(items.map(mapVehicleColorDefinition), query, total);
+      }
     }
   });
 }
@@ -314,7 +441,7 @@ export async function searchListings(
   tenantId: string,
   query: SearchQuery,
 ): Promise<unknown> {
-  const where = buildSearchWhere(tenantId, query);
+  const where = buildActiveListingWhere(tenantId, query);
   const orderBy = buildSearchOrder(query.sort);
   const skip = (query.page - 1) * query.pageSize;
 
@@ -1303,10 +1430,25 @@ async function writeColorDefinition(
   return mapVehicleColorDefinition(item);
 }
 
-function definitionWhere(tenantId: string, query: VehicleDefinitionQuery): Record<string, unknown> {
+function definitionWhere(
+  tenantId: string,
+  entity: VehicleDefinitionEntity,
+  query: VehicleDefinitionQuery,
+): Record<string, unknown> {
   return {
     tenantId,
-    ...(query.includeInactive ? {} : { isActive: true }),
+    ...(query.active === 'active' || !query.includeInactive ? { isActive: true } : {}),
+    ...(query.active === 'inactive' ? { isActive: false } : {}),
+    ...(entity === 'models' && query.makeId ? { makeId: query.makeId } : {}),
+    ...(entity === 'trims' && query.modelId ? { modelId: query.modelId } : {}),
+    ...(supportsSortOrder(entity) && (query.minSortOrder || query.maxSortOrder)
+      ? {
+          sortOrder: removeUndefined({
+            gte: query.minSortOrder,
+            lte: query.maxSortOrder,
+          }),
+        }
+      : {}),
     ...(query.q
       ? {
           OR: [
@@ -1316,6 +1458,73 @@ function definitionWhere(tenantId: string, query: VehicleDefinitionQuery): Recor
         }
       : {}),
   };
+}
+
+function optionWhere(tenantId: string, query: OptionQuery): Record<string, unknown> {
+  const activeFilter = query.includeInactive
+    ? undefined
+    : query.selectedId
+      ? { OR: [{ isActive: true }, { id: query.selectedId }] }
+      : { isActive: true };
+  const searchFilter = query.q
+    ? {
+        OR: [
+          { name: { contains: query.q, mode: 'insensitive' } },
+          { normalizedName: { contains: normalizeDefinitionName(query.q), mode: 'insensitive' } },
+        ],
+      }
+    : undefined;
+
+  return {
+    tenantId,
+    ...(activeFilter && searchFilter ? { AND: [activeFilter, searchFilter] } : activeFilter ?? searchFilter ?? {}),
+  };
+}
+
+function definitionOrderBy(
+  entity: VehicleDefinitionEntity,
+  query: VehicleDefinitionQuery,
+): Record<string, 'asc' | 'desc'>[] {
+  const direction = query.sortDirection;
+  const sortBy = query.sortBy === 'sortOrder' && !supportsSortOrder(entity) ? 'name' : query.sortBy;
+
+  if (sortBy === 'sortOrder') {
+    return [{ isActive: 'desc' }, { sortOrder: direction }, { name: 'asc' }];
+  }
+
+  return [{ isActive: 'desc' }, { [sortBy]: direction }, { name: 'asc' }];
+}
+
+function supportsSortOrder(entity: VehicleDefinitionEntity): boolean {
+  return !['makes', 'models', 'trims'].includes(entity);
+}
+
+function paginated(
+  items: unknown[],
+  query: Pick<VehicleDefinitionQuery, 'page' | 'pageSize'>,
+  total: number,
+): { items: unknown[]; page: number; pageSize: number; total: number; pageCount: number } {
+  return {
+    items,
+    page: query.page,
+    pageSize: query.pageSize,
+    total,
+    pageCount: Math.ceil(total / query.pageSize),
+  };
+}
+
+function stableCacheKey(value: Record<string, unknown>): string {
+  return JSON.stringify(
+    Object.keys(value)
+      .sort()
+      .reduce<Record<string, unknown>>((result, key) => {
+        const item = value[key];
+        if (item !== undefined && item !== null && item !== '') {
+          result[key] = item;
+        }
+        return result;
+      }, {}),
+  );
 }
 
 function catalogDelegate(tx: ShowroomTx, entity: VehicleDefinitionEntity): any {
@@ -1647,71 +1856,6 @@ async function countActiveListings(
       status: CarListingStatus.ACTIVE,
     },
   });
-}
-
-function buildSearchWhere(tenantId: string, query: SearchQuery): Prisma.CarListingWhereInput {
-  return {
-    tenantId,
-    status: CarListingStatus.ACTIVE,
-    ...(query.makeId ? { makeId: query.makeId } : {}),
-    ...(query.modelId ? { modelId: query.modelId } : {}),
-    ...(query.variantId ? { variantId: query.variantId } : {}),
-    ...(query.condition ? { condition: query.condition } : {}),
-    ...(query.location ? { location: { contains: query.location, mode: 'insensitive' } } : {}),
-    ...(query.minYear || query.maxYear
-      ? {
-          modelYear: removeUndefined({
-            gte: query.minYear,
-            lte: query.maxYear,
-          }),
-        }
-      : {}),
-    ...(query.minPrice || query.maxPrice
-      ? {
-          price: removeUndefined({
-            gte: query.minPrice,
-            lte: query.maxPrice,
-          }),
-        }
-      : {}),
-    ...(query.minMileage || query.maxMileage
-      ? {
-          mileage: removeUndefined({
-            gte: query.minMileage,
-            lte: query.maxMileage,
-          }),
-        }
-      : {}),
-    ...(query.bodyType || query.fuelType || query.transmission
-      ? {
-          variant: removeUndefined({
-            bodyType: query.bodyType,
-            fuelType: query.fuelType,
-            transmission: query.transmission,
-          }),
-        }
-      : {}),
-    ...(query.color
-      ? {
-          OR: [
-            { exteriorColorName: { contains: query.color, mode: 'insensitive' } },
-            { interiorColorName: { contains: query.color, mode: 'insensitive' } },
-          ],
-        }
-      : {}),
-    ...(query.q
-      ? {
-          OR: [
-            { title: { contains: query.q, mode: 'insensitive' } },
-            { description: { contains: query.q, mode: 'insensitive' } },
-            { location: { contains: query.q, mode: 'insensitive' } },
-            { make: { name: { contains: query.q, mode: 'insensitive' } } },
-            { model: { name: { contains: query.q, mode: 'insensitive' } } },
-            { variant: { name: { contains: query.q, mode: 'insensitive' } } },
-          ],
-        }
-      : {}),
-  };
 }
 
 function buildSearchOrder(sort: SearchQuery['sort']): Prisma.CarListingOrderByWithRelationInput[] {

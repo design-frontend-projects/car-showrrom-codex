@@ -30,6 +30,7 @@ import {
   listMakes,
   listModels,
   listTaxonomy,
+  listVehicleOptions,
   listVariants,
   reorderListingImages,
   reviewVehicleRequest,
@@ -55,6 +56,7 @@ import {
   listingUpdateSchema,
   makeDefinitionSchema,
   modelDefinitionSchema,
+  optionQuerySchema,
   parseShowroomPayload,
   requestInputSchema,
   requestReviewSchema,
@@ -126,6 +128,20 @@ export function registerShowroomRoutes(app: Express): void {
         typeof request.query['modelId'] === 'string' ? request.query['modelId'] : undefined;
       const result = await withRbacDatabaseContext({ tenantId, bypassTenantIsolation: false }, (tx) =>
         listVariants(tx, tenantId, modelId),
+      );
+
+      response.json(result);
+    }),
+  );
+
+  router.get(
+    '/options/:entity',
+    handle(async (request, response) => {
+      const tenantId = readPublicTenantId(request);
+      const entity = readDefinitionEntity(request);
+      const query = parseShowroomPayload(optionQuerySchema, request.query);
+      const result = await withRbacDatabaseContext({ tenantId, bypassTenantIsolation: false }, (tx) =>
+        listVehicleOptions(tx, tenantId, entity, query),
       );
 
       response.json(result);

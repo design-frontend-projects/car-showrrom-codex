@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { InputTextModule } from 'primeng/inputtext';
@@ -11,8 +11,9 @@ import { AdminVehicleApiService } from '../../../core/showroom/admin-vehicle-api
 import {
   AdminVehicleListParams,
   AdminVehicleListResult,
-  CarListingCondition,
+  AdminVehicleOverviewResolvedData,
   CarListingStatus,
+  VehicleDefinitionCatalogItem,
 } from '../../../core/showroom/showroom.models';
 import { formatCurrency, formatMileage } from '../../../utils/number-format.util';
 
@@ -46,7 +47,7 @@ import { formatCurrency, formatMileage } from '../../../utils/number-format.util
       <form class="admin-filterbar" (ngSubmit)="loadVehicles()">
         <input pInputText type="search" name="q" [(ngModel)]="filters.q" placeholder="Search title, make, model, location" />
         <p-select [options]="statusOptions" optionLabel="label" optionValue="value" name="status" [(ngModel)]="filters.status" placeholder="Status" [showClear]="true" />
-        <p-select [options]="conditionOptions" optionLabel="label" optionValue="value" name="condition" [(ngModel)]="filters.condition" placeholder="Condition" [showClear]="true" />
+        <p-select [options]="conditionOptions()" optionLabel="name" optionValue="code" name="condition" [(ngModel)]="filters.condition" placeholder="Condition" [showClear]="true" />
         <p-button type="submit" icon="pi pi-search" label="Filter" [outlined]="true" />
       </form>
 
@@ -165,8 +166,10 @@ import { formatCurrency, formatMileage } from '../../../utils/number-format.util
 })
 export class AdminVehiclesPage implements OnInit {
   private readonly api = inject(AdminVehicleApiService);
+  private readonly route = inject(ActivatedRoute);
   readonly loading = signal(false);
   readonly result = signal<AdminVehicleListResult | null>(null);
+  readonly conditionOptions = signal<VehicleDefinitionCatalogItem[]>([]);
   readonly price = formatCurrency;
   readonly mileage = formatMileage;
 
@@ -185,14 +188,15 @@ export class AdminVehiclesPage implements OnInit {
     { label: 'Archived', value: 'ARCHIVED' },
   ];
 
-  readonly conditionOptions: { label: string; value: CarListingCondition }[] = [
-    { label: 'New', value: 'NEW' },
-    { label: 'Certified', value: 'CERTIFIED_PRE_OWNED' },
-    { label: 'Used', value: 'USED' },
-    { label: 'Damaged', value: 'DAMAGED' },
-  ];
-
   async ngOnInit(): Promise<void> {
+    const resolved = this.route.snapshot.data['adminVehicleData'] as AdminVehicleOverviewResolvedData | undefined;
+
+    if (resolved) {
+      this.result.set(resolved.result);
+      this.conditionOptions.set(resolved.conditions);
+      return;
+    }
+
     await this.loadVehicles();
   }
 

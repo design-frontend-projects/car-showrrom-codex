@@ -11,13 +11,15 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { firstValueFrom } from 'rxjs';
 import { CatalogApiService } from '../../../core/showroom/catalog-api.service';
 import {
+  CatalogRouteResolvedData,
   ListingSearchParams,
   ListingSummaryDto,
   ShowroomMake,
   ShowroomModel,
-  ShowroomTaxonomy,
   ShowroomVariant,
+  VehicleDefinitionCatalogItem,
 } from '../../../core/showroom/showroom.models';
+import { VehicleOptionLoaderService } from '../../../core/showroom/vehicle-option-loader.service';
 import { ResponsiveLayoutService } from '../../../core/layout/responsive-layout.service';
 import { formatCurrency, formatMileage } from '../../../utils/number-format.util';
 
@@ -52,7 +54,7 @@ import { formatCurrency, formatMileage } from '../../../utils/number-format.util
         />
 
         <p-select
-          [options]="taxonomy()?.makes ?? []"
+          [options]="makes()"
           optionLabel="name"
           optionValue="id"
           [(ngModel)]="filters.makeId"
@@ -78,9 +80,9 @@ import { formatCurrency, formatMileage } from '../../../utils/number-format.util
         />
 
         <p-select
-          [options]="conditionOptions"
-          optionLabel="label"
-          optionValue="value"
+          [options]="conditionOptions()"
+          optionLabel="name"
+          optionValue="code"
           [(ngModel)]="filters.condition"
           [placeholder]="'showroom.search.condition' | translate"
         />
@@ -114,7 +116,10 @@ import { formatCurrency, formatMileage } from '../../../utils/number-format.util
         @if (loading()) {
           <div class="state-panel">{{ 'showroom.states.loading' | translate }}</div>
         } @else if (error()) {
-          <div class="state-panel error">{{ error() | translate }}</div>
+          <div class="state-panel error">
+            <span>{{ error() | translate }}</span>
+            <p-button label="Retry" icon="pi pi-refresh" [outlined]="true" (onClick)="loadResults()" />
+          </div>
         } @else if ((vehicles()?.items?.length ?? 0) === 0) {
           <div class="state-panel">{{ 'showroom.states.empty' | translate }}</div>
         } @else {
@@ -160,8 +165,12 @@ export class CatalogPage implements OnInit {
   private readonly translate = inject(TranslateService);
   private readonly layout = inject(ResponsiveLayoutService);
   private readonly catalog = inject(CatalogApiService);
+  private readonly optionLoader = inject(VehicleOptionLoaderService);
 
-  readonly taxonomy = signal<ShowroomTaxonomy | null>(null);
+  readonly makes = signal<ShowroomMake[]>([]);
+  readonly models = signal<ShowroomModel[]>([]);
+  readonly variants = signal<ShowroomVariant[]>([]);
+  readonly conditionOptions = signal<VehicleDefinitionCatalogItem[]>([]);
   readonly vehicles = signal<{ items: ListingSummaryDto[]; page: number; pageCount: number } | null>(null);
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -171,47 +180,42 @@ export class CatalogPage implements OnInit {
   readonly pageKey = computed(() => this.route.snapshot.data['pageKey'] as 'usedCars' | 'newCars');
   readonly title = computed(() => this.translate.instant(`pages.${this.pageKey()}.title`));
   readonly copy = computed(() => this.translate.instant(`pages.${this.pageKey()}.copy`));
-  readonly conditionOptions = [
-    { label: 'New', value: 'NEW' },
-    { label: 'Certified', value: 'CERTIFIED_PRE_OWNED' },
-    { label: 'Used', value: 'USED' },
-  ];
-
   readonly filters: ListingSearchParams = {};
   priceRange = [0, 200000];
   activeOnly = true;
 
-  readonly models = computed<ShowroomModel[]>(() => {
-    const make = this.taxonomy()?.makes.find((item: ShowroomMake) => item.id === this.filters.makeId);
-    return make?.models ?? [];
-  });
-
-  readonly variants = computed<ShowroomVariant[]>(() => {
-    const model = this.models().find((item) => item.id === this.filters.modelId);
-    return model?.variants ?? [];
-  });
-
   ngOnInit(): void {
-    void this.loadTaxonomy();
+    this.route.data.subscribe((data) => {
+      this.applyResolvedData(data['catalogData'] as CatalogRouteResolvedData | undefined);
+    });
+
     this.route.queryParamMap.subscribe((params) => {
       this.filters.q = params.get('q') ?? undefined;
       this.filters.makeId = params.get('makeId') ?? undefined;
       this.filters.modelId = params.get('modelId') ?? undefined;
       this.filters.variantId = params.get('variantId') ?? undefined;
       this.filters.location = params.get('location') ?? undefined;
+      this.filters.minPrice = params.get('minPrice') ? Number(params.get('minPrice')) : undefined;
+      this.filters.maxPrice = params.get('maxPrice') ? Number(params.get('maxPrice')) : undefined;
       this.filters.page = Number(params.get('page') ?? 1);
       this.filters.sort = 'newest';
-      void this.loadResults();
+      this.priceRange = [this.filters.minPrice ?? 0, this.filters.maxPrice ?? 200000];
+      void this.loadDependentOptions();
     });
   }
 
   onMakeChange(): void {
     this.filters.modelId = undefined;
     this.filters.variantId = undefined;
+    this.models.set([]);
+    this.variants.set([]);
+    void this.loadModels();
   }
 
   onModelChange(): void {
     this.filters.variantId = undefined;
+    this.variants.set([]);
+    void this.loadVariants();
   }
 
   applyFilters(): void {
@@ -247,24 +251,88 @@ export class CatalogPage implements OnInit {
     return vehicle.primaryImage?.url ?? 'https://images.unsplash.com/photo-1494976388531-d1058494cdd8?auto=format&fit=crop&w=1200&q=80';
   }
 
-  private async loadTaxonomy(): Promise<void> {
-    try {
-      this.taxonomy.set(await firstValueFrom(this.catalog.taxonomy()));
-    } catch {
-      this.error.set('showroom.error.tenantRequired');
-    }
-  }
-
-  private async loadResults(): Promise<void> {
+  async loadResults(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
 
     try {
-      this.vehicles.set(await firstValueFrom(this.catalog.search({ ...this.filters, pageSize: 12 })));
+      this.vehicles.set(
+        await firstValueFrom(
+          this.catalog.search({
+            ...this.filters,
+            inventoryScope: this.route.snapshot.data['vehicleConditionScope'],
+            pageSize: 12,
+          }),
+        ),
+      );
     } catch {
       this.error.set('showroom.error.requestFailed');
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  private applyResolvedData(data: CatalogRouteResolvedData | undefined): void {
+    if (!data) {
+      return;
+    }
+
+    this.error.set(data.error ?? null);
+    this.vehicles.set(data.results);
+    this.makes.set(data.options.makes);
+    this.conditionOptions.set(data.options.conditions);
+  }
+
+  private async loadDependentOptions(): Promise<void> {
+    await this.loadModels();
+    await this.loadVariants();
+  }
+
+  private async loadModels(): Promise<void> {
+    if (!this.filters.makeId) {
+      this.models.set([]);
+      return;
+    }
+
+    const state = await firstValueFrom(
+      this.optionLoader.load<ShowroomModel>(
+        {
+          key: 'catalog-models',
+          entity: 'models',
+          parentKeys: ['makeId'],
+          parentParamMap: { makeId: 'makeId' },
+          emptyMessageKey: 'showroom.states.empty',
+        },
+        { makeId: this.filters.makeId },
+      ),
+    );
+
+    if (state.status !== 'stale') {
+      this.models.set(state.items);
+    }
+  }
+
+  private async loadVariants(): Promise<void> {
+    if (!this.filters.modelId) {
+      this.variants.set([]);
+      return;
+    }
+
+    const state = await firstValueFrom(
+      this.optionLoader.load<ShowroomVariant>(
+        {
+          key: 'catalog-trims',
+          entity: 'trims',
+          parentKeys: ['modelId'],
+          parentParamMap: { modelId: 'modelId' },
+          emptyMessageKey: 'showroom.states.empty',
+        },
+        { modelId: this.filters.modelId },
+      ),
+    );
+
+    if (state.status !== 'stale') {
+      this.variants.set(state.items);
     }
   }
 }

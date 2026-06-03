@@ -11,6 +11,7 @@ Admin vehicle definition screens for creating, editing, publishing, archiving, a
 ## API Endpoints
 
 - `GET /api/showroom/admin/vehicles` - list admin-manageable vehicle listings.
+- `GET /api/showroom/options/:entity` - load focused, tenant-scoped dropdown options for makes, models, trims, conditions, catalog attributes, and colors.
 - `POST /api/showroom/admin/vehicles` - create draft or published listings.
 - `GET /api/showroom/admin/vehicles/:listingId` - fetch edit/preview data.
 - `PATCH /api/showroom/admin/vehicles/:listingId` - update listing details.
@@ -23,6 +24,8 @@ Admin vehicle definition screens for creating, editing, publishing, archiving, a
 - `GET /api/showroom/inventory-counters` - landing page active new/used totals.
 
 ## Extension Notes
+
+The overview, create, and edit routes use Angular resolvers for initial listing and option data. Dependent make/model/trim dropdowns use the shared `VehicleOptionLoaderService`; loader configs should include parent keys, query-param mapping, debounce, selected-id fallback, and cache policy.
 
 The workflow persists to the existing `CarListing` and `CarListingImage` schema. Admin-created listings use the current admin user as `sellerUserId` until salesperson assignment is added. Feature checklist, engine, and display-only spec details are folded into `description`; add schema fields before treating those as filterable data.
 

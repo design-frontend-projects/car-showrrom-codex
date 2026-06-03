@@ -36,8 +36,19 @@ export const vehicleDefinitionEntitySchema = z.enum([
   'interior-colors',
 ]);
 
+export const inventoryScopeSchema = z.enum(['new', 'used']);
+export const optionQuerySchema = z.object({
+  q: z.string().trim().max(120).optional(),
+  includeInactive: z.coerce.boolean().default(false),
+  selectedId: uuidSchema.optional(),
+  makeId: uuidSchema.optional(),
+  modelId: uuidSchema.optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
 export const searchQuerySchema = z
   .object({
+    inventoryScope: inventoryScopeSchema.optional(),
     q: z.string().trim().max(120).optional(),
     makeId: uuidSchema.optional(),
     modelId: uuidSchema.optional(),
@@ -163,6 +174,18 @@ export const adminVehicleUpdateSchema = listingUpdateSchema;
 export const vehicleDefinitionQuerySchema = z.object({
   q: z.string().trim().max(120).optional(),
   includeInactive: z.coerce.boolean().default(true),
+  active: z.enum(['active', 'inactive', 'all']).default('all'),
+  makeId: uuidSchema.optional(),
+  modelId: uuidSchema.optional(),
+  sortBy: z.enum(['name', 'createdAt', 'updatedAt', 'sortOrder', 'isActive']).default('name'),
+  sortDirection: z.enum(['asc', 'desc']).default('asc'),
+  minSortOrder: z.coerce.number().int().min(0).max(100_000).optional(),
+  maxSortOrder: z.coerce.number().int().min(0).max(100_000).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+}).refine((value) => !value.minSortOrder || !value.maxSortOrder || value.minSortOrder <= value.maxSortOrder, {
+  path: ['maxSortOrder'],
+  message: 'showroom.validation.range',
 });
 
 const definitionBaseSchema = z.object({
@@ -239,6 +262,8 @@ export function parseShowroomPayload<T>(schema: z.ZodSchema<T>, payload: unknown
 export type ListingInput = z.infer<typeof listingInputSchema>;
 export type ListingUpdateInput = z.infer<typeof listingUpdateSchema>;
 export type SearchQuery = z.infer<typeof searchQuerySchema>;
+export type InventoryScope = z.infer<typeof inventoryScopeSchema>;
+export type OptionQuery = z.infer<typeof optionQuerySchema>;
 export type VehicleRequestInput = z.infer<typeof requestInputSchema>;
 export type RequestReviewInput = z.infer<typeof requestReviewSchema>;
 export type AdminVehicleQuery = z.infer<typeof adminVehicleQuerySchema>;

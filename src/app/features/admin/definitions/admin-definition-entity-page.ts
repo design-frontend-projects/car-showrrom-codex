@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -13,9 +14,12 @@ import {
   VehicleDefinitionApiService,
 } from '../../../core/showroom/vehicle-definition-api.service';
 import {
+  DefinitionEntityResolvedData,
   VehicleDefinitionEntity,
+  VehicleDefinitionListResult,
   VehicleDefinitionRecord,
 } from '../../../core/showroom/showroom.models';
+import { VehicleOptionLoaderService } from '../../../core/showroom/vehicle-option-loader.service';
 import {
   createDefinitionForm,
   DefinitionConfig,
@@ -31,6 +35,7 @@ import {
   imports: [
     ButtonModule,
     DialogModule,
+    FormsModule,
     InputTextModule,
     LucideAngularModule,
     ReactiveFormsModule,
@@ -53,10 +58,56 @@ import {
     </section>
 
     <section class="definition-shell">
-      <form class="definition-toolbar" (ngSubmit)="loadRecords()">
+      <form class="definition-toolbar" (ngSubmit)="applyFilters()">
         <input pInputText type="search" [formControl]="searchControl" [placeholder]="'admin.definitions.search' | translate" />
+        @if (parentFilterVisible()) {
+          <p-select
+            [options]="parentOptions()"
+            optionLabel="name"
+            optionValue="id"
+            [showClear]="true"
+            [ngModel]="parentFilter()"
+            (ngModelChange)="parentFilter.set($event)"
+            [ngModelOptions]="{ standalone: true }"
+            [placeholder]="parentLabel() | translate"
+          />
+        }
+        <p-select
+          [options]="sortByOptions"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="sortBy()"
+          (ngModelChange)="sortBy.set($event)"
+          [ngModelOptions]="{ standalone: true }"
+        />
+        <p-select
+          [options]="sortDirectionOptions"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="sortDirection()"
+          (ngModelChange)="sortDirection.set($event)"
+          [ngModelOptions]="{ standalone: true }"
+        />
+        @if (sortOrderRangeVisible()) {
+          <input
+            pInputText
+            type="number"
+            [ngModel]="minSortOrder()"
+            (ngModelChange)="setMinSortOrder($event)"
+            [ngModelOptions]="{ standalone: true }"
+            placeholder="Min sort"
+          />
+          <input
+            pInputText
+            type="number"
+            [ngModel]="maxSortOrder()"
+            (ngModelChange)="setMaxSortOrder($event)"
+            [ngModelOptions]="{ standalone: true }"
+            placeholder="Max sort"
+          />
+        }
         <label class="checkline">
-          <input type="checkbox" [checked]="includeInactive()" (change)="includeInactive.set($any($event.target).checked); loadRecords()" />
+          <input type="checkbox" [checked]="includeInactive()" (change)="includeInactive.set($any($event.target).checked); applyFilters()" />
           <span>{{ 'admin.definitions.includeInactive' | translate }}</span>
         </label>
         <p-button type="submit" [outlined]="true" [label]="'admin.definitions.actions.filter' | translate" styleClass="gap-2">
@@ -67,7 +118,10 @@ import {
       <div class="sr-only" aria-live="polite">{{ announcement() }}</div>
 
       @if (error()) {
-        <div class="state-panel error">{{ error() | translate }}</div>
+        <div class="state-panel error">
+          <span>{{ error() | translate }}</span>
+          <p-button [outlined]="true" icon="pi pi-refresh" label="Retry" (onClick)="loadRecords()" />
+        </div>
       } @else if (loading()) {
         <div class="state-panel">{{ 'admin.definitions.states.loading' | translate }}</div>
       } @else if (records().length === 0) {
@@ -113,6 +167,11 @@ import {
               }
             </tbody>
           </table>
+        </div>
+        <div class="pagination-row">
+          <p-button icon="pi pi-angle-left" [disabled]="result().page <= 1" [outlined]="true" (onClick)="goToPage(result().page - 1)" />
+          <span>{{ result().page }} / {{ result().pageCount || 1 }} - {{ result().total }} records</span>
+          <p-button icon="pi pi-angle-right" [disabled]="result().page >= (result().pageCount || 1)" [outlined]="true" (onClick)="goToPage(result().page + 1)" />
         </div>
       }
     </section>
@@ -290,10 +349,12 @@ export class AdminDefinitionEntityPage implements OnInit {
   private readonly api = inject(VehicleDefinitionApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
+  private readonly optionLoader = inject(VehicleOptionLoaderService);
   private readonly translate = inject(TranslateService);
 
   readonly entity = signal<VehicleDefinitionEntity>('makes');
   readonly config = computed<DefinitionConfig>(() => getDefinitionConfig(this.entity()));
+  readonly result = signal<VehicleDefinitionListResult>(emptyDefinitionResult());
   readonly records = signal<VehicleDefinitionRecord[]>([]);
   readonly loading = signal(false);
   readonly saving = signal(false);
@@ -303,6 +364,29 @@ export class AdminDefinitionEntityPage implements OnInit {
   readonly includeInactive = signal(true);
   readonly announcement = signal('');
   readonly searchControl = this.fb.control('');
+  readonly page = signal(1);
+  readonly pageSize = signal(20);
+  readonly parentFilter = signal<string | null>(null);
+  readonly sortBy = signal<'name' | 'createdAt' | 'updatedAt' | 'sortOrder' | 'isActive'>('name');
+  readonly sortDirection = signal<'asc' | 'desc'>('asc');
+  readonly minSortOrder = signal<number | null>(null);
+  readonly maxSortOrder = signal<number | null>(null);
+  readonly sortByOptions = [
+    { label: 'Name', value: 'name' },
+    { label: 'Created', value: 'createdAt' },
+    { label: 'Updated', value: 'updatedAt' },
+    { label: 'Sort order', value: 'sortOrder' },
+    { label: 'Active state', value: 'isActive' },
+  ];
+  readonly sortDirectionOptions = [
+    { label: 'Ascending', value: 'asc' },
+    { label: 'Descending', value: 'desc' },
+  ];
+  readonly parentFilterVisible = computed(() => this.entity() === 'models' || this.entity() === 'trims');
+  readonly sortOrderRangeVisible = computed(() => !['makes', 'models', 'trims'].includes(this.entity()));
+  readonly parentLabel = computed(() =>
+    this.entity() === 'models' ? 'admin.definitions.fields.make' : 'admin.definitions.fields.model',
+  );
   readonly optionState = signal<Record<DefinitionOptionSource, VehicleDefinitionRecord[]>>({
     makes: [],
     models: [],
@@ -319,7 +403,15 @@ export class AdminDefinitionEntityPage implements OnInit {
   async ngOnInit(): Promise<void> {
     this.entity.set((this.route.snapshot.paramMap.get('entity') as VehicleDefinitionEntity | null) ?? 'makes');
     this.form = createDefinitionForm(this.fb, this.config());
-    await Promise.all([this.loadRecords(), this.loadOptions()]);
+    const resolved = this.route.snapshot.data['definitionData'] as DefinitionEntityResolvedData | undefined;
+
+    if (resolved) {
+      this.result.set(resolved.result);
+      this.records.set(resolved.result.items);
+      this.error.set(resolved.error ?? null);
+    }
+
+    await Promise.all([resolved ? Promise.resolve() : this.loadRecords(), this.loadOptions()]);
   }
 
   async loadRecords(): Promise<void> {
@@ -327,14 +419,23 @@ export class AdminDefinitionEntityPage implements OnInit {
     this.error.set(null);
 
     try {
-      this.records.set(
-        await firstValueFrom(
+      const result = await firstValueFrom(
           this.api.list(this.entity(), {
             q: this.searchControl.value ?? '',
             includeInactive: this.includeInactive(),
+            makeId: this.entity() === 'models' ? this.parentFilter() ?? undefined : undefined,
+            modelId: this.entity() === 'trims' ? this.parentFilter() ?? undefined : undefined,
+            sortBy: this.sortBy(),
+            sortDirection: this.sortDirection(),
+            minSortOrder: this.sortOrderRangeVisible() ? this.minSortOrder() ?? undefined : undefined,
+            maxSortOrder: this.sortOrderRangeVisible() ? this.maxSortOrder() ?? undefined : undefined,
+            page: this.page(),
+            pageSize: this.pageSize(),
           }),
-        ),
       );
+
+      this.result.set(result);
+      this.records.set(result.items);
     } catch {
       this.error.set('admin.definitions.errors.load');
       this.records.set([]);
@@ -344,15 +445,24 @@ export class AdminDefinitionEntityPage implements OnInit {
   }
 
   async loadOptions(): Promise<void> {
-    const load = (entity: VehicleDefinitionEntity) =>
-      firstValueFrom(this.api.list(entity, { includeInactive: false })).catch(() => [] as VehicleDefinitionRecord[]);
+    const load = (entity: VehicleDefinitionEntity, key: DefinitionOptionSource) =>
+      firstValueFrom(
+        this.optionLoader.load<VehicleDefinitionRecord>({
+          key: `definition-${key}`,
+          entity,
+          includeInactive: false,
+          limit: 100,
+        }),
+      )
+        .then((state) => state.items)
+        .catch(() => [] as VehicleDefinitionRecord[]);
     const [makes, models, engines, transmissions, fuelTypes, bodyTypes] = await Promise.all([
-      load('makes'),
-      load('models'),
-      load('engines'),
-      load('transmissions'),
-      load('fuel-types'),
-      load('body-types'),
+      load('makes', 'makes'),
+      load('models', 'models'),
+      load('engines', 'engines'),
+      load('transmissions', 'transmissions'),
+      load('fuel-types', 'fuelTypes'),
+      load('body-types', 'bodyTypes'),
     ]);
 
     this.optionState.set({ makes, models, engines, transmissions, fuelTypes, bodyTypes });
@@ -360,6 +470,23 @@ export class AdminDefinitionEntityPage implements OnInit {
 
   options(source: DefinitionOptionSource): VehicleDefinitionRecord[] {
     return this.optionState()[source] ?? [];
+  }
+
+  parentOptions(): VehicleDefinitionRecord[] {
+    return this.entity() === 'models' ? this.options('makes') : this.options('models');
+  }
+
+  async applyFilters(): Promise<void> {
+    this.page.set(1);
+    await this.loadRecords();
+  }
+
+  setMinSortOrder(value: unknown): void {
+    this.minSortOrder.set(coerceOptionalNumber(value));
+  }
+
+  setMaxSortOrder(value: unknown): void {
+    this.maxSortOrder.set(coerceOptionalNumber(value));
   }
 
   openCreate(): void {
@@ -443,4 +570,28 @@ export class AdminDefinitionEntityPage implements OnInit {
   readValue(record: VehicleDefinitionRecord, key: string): unknown {
     return (record as unknown as Record<string, unknown>)[key];
   }
+
+  async goToPage(page: number): Promise<void> {
+    this.page.set(page);
+    await this.loadRecords();
+  }
+}
+
+function emptyDefinitionResult(): VehicleDefinitionListResult {
+  return {
+    items: [],
+    page: 1,
+    pageSize: 20,
+    total: 0,
+    pageCount: 0,
+  };
+}
+
+function coerceOptionalNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  const next = Number(value);
+  return Number.isFinite(next) ? next : null;
 }

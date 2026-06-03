@@ -1,9 +1,11 @@
 import { clearVehicleInventoryCounterCache } from './cache';
 import { ShowroomContext } from './auth';
 import { ShowroomHttpError } from './errors';
+import type { ShowroomTx } from './repositories';
 import {
   createVehicleDefinition,
   deactivateVehicleDefinition,
+  listVehicleOptions,
   listUsersAndRoles,
   listVehicleDefinitions,
 } from './services';
@@ -103,6 +105,7 @@ describe('admin vehicle definition services', () => {
     const tx = {
       carMake: {
         findMany: vi.fn().mockResolvedValueOnce([first]).mockResolvedValueOnce([second]),
+        count: vi.fn().mockResolvedValue(1),
         create: vi.fn().mockResolvedValue(created),
       },
       rbacAuditEvent: {
@@ -110,17 +113,17 @@ describe('admin vehicle definition services', () => {
       },
     };
 
-    await expect(listVehicleDefinitions(tx as never, adminContext, 'makes', { includeInactive: false })).resolves.toEqual([
+    await expect(definitionItems(tx as never, adminContext, 'makes')).resolves.toEqual([
       expect.objectContaining({ id: 'old-id' }),
     ]);
-    await expect(listVehicleDefinitions(tx as never, adminContext, 'makes', { includeInactive: false })).resolves.toEqual([
+    await expect(definitionItems(tx as never, adminContext, 'makes')).resolves.toEqual([
       expect.objectContaining({ id: 'old-id' }),
     ]);
 
     await expect(createVehicleDefinition(tx as never, adminContext, 'makes', { name: 'Created make' })).resolves.toEqual(
       expect.objectContaining({ id: 'created-id' }),
     );
-    await expect(listVehicleDefinitions(tx as never, adminContext, 'makes', { includeInactive: false })).resolves.toEqual([
+    await expect(definitionItems(tx as never, adminContext, 'makes')).resolves.toEqual([
       expect.objectContaining({ id: 'new-id' }),
     ]);
 
@@ -151,6 +154,7 @@ describe('admin vehicle definition services', () => {
     const tx = {
       vehicleExteriorColor: {
         findMany: vi.fn().mockResolvedValueOnce([first]).mockResolvedValueOnce([second]),
+        count: vi.fn().mockResolvedValue(1),
         create: vi.fn().mockResolvedValue(created),
       },
       rbacAuditEvent: {
@@ -158,7 +162,7 @@ describe('admin vehicle definition services', () => {
       },
     };
 
-    await expect(listVehicleDefinitions(tx as never, adminContext, 'exterior-colors', { includeInactive: false })).resolves.toEqual([
+    await expect(definitionItems(tx as never, adminContext, 'exterior-colors')).resolves.toEqual([
       expect.objectContaining({ id: 'old-color-id', hexCode: '#ffffff' }),
     ]);
     await expect(
@@ -168,7 +172,7 @@ describe('admin vehicle definition services', () => {
         localizedNames: { ar: 'أبيض لؤلؤي' },
       }),
     ).resolves.toEqual(expect.objectContaining({ id: 'created-color-id' }));
-    await expect(listVehicleDefinitions(tx as never, adminContext, 'exterior-colors', { includeInactive: false })).resolves.toEqual([
+    await expect(definitionItems(tx as never, adminContext, 'exterior-colors')).resolves.toEqual([
       expect.objectContaining({ id: 'new-color-id' }),
     ]);
 
@@ -223,7 +227,62 @@ describe('admin vehicle definition services', () => {
       }),
     });
   });
+
+  it('loads focused option results with dependency filters and selected inactive inclusion', async () => {
+    const model = {
+      id: 'model-id',
+      tenantId: 'tenant-id',
+      makeId: 'make-id',
+      name: 'Cayenne',
+      normalizedName: 'cayenne',
+      productionFrom: null,
+      productionTo: null,
+      isActive: false,
+      createdAt: new Date('2026-06-03T12:00:00.000Z'),
+      updatedAt: new Date('2026-06-03T12:00:00.000Z'),
+    };
+    const tx = {
+      carModel: {
+        findMany: vi.fn().mockResolvedValue([model]),
+        count: vi.fn().mockResolvedValue(1),
+      },
+    };
+
+    const result = await listVehicleOptions(tx as never, 'tenant-id', 'models', {
+      includeInactive: false,
+      selectedId: 'model-id',
+      makeId: 'make-id',
+      limit: 50,
+    });
+
+    expect(result.items).toEqual([expect.objectContaining({ id: 'model-id', makeId: 'make-id' })]);
+    expect(tx.carModel.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          tenantId: 'tenant-id',
+          makeId: 'make-id',
+        }),
+      }),
+    );
+  });
 });
+
+async function definitionItems(
+  tx: ShowroomTx,
+  context: ShowroomContext,
+  entity: Parameters<typeof listVehicleDefinitions>[2],
+) {
+  const result = await listVehicleDefinitions(tx, context, entity, {
+    includeInactive: false,
+    active: 'all',
+    sortBy: 'name',
+    sortDirection: 'asc',
+    page: 1,
+    pageSize: 20,
+  });
+
+  return result.items;
+}
 
 function makeRecord(id: string, name: string) {
   return {

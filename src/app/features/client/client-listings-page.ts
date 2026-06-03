@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -14,8 +15,12 @@ import {
   ClientListingsDto,
   ListingInputDto,
   ListingSummaryDto,
-  ShowroomTaxonomy,
+  ShowroomMake,
+  ShowroomModel,
+  ShowroomVariant,
+  VehicleDefinitionCatalogItem,
 } from '../../core/showroom/showroom.models';
+import { VehicleOptionLoaderService } from '../../core/showroom/vehicle-option-loader.service';
 import { formatCurrency, formatMileage } from '../../utils/number-format.util';
 
 @Component({
@@ -33,10 +38,10 @@ import { formatCurrency, formatMileage } from '../../utils/number-format.util';
         <h2>{{ 'showroom.client.formTitle' | translate }}</h2>
         <input pInputText name="title" required [(ngModel)]="draft.title" [placeholder]="'showroom.fields.title' | translate" />
         <div class="form-grid">
-          <p-select [options]="taxonomy()?.makes ?? []" optionLabel="name" optionValue="id" name="makeId" required [(ngModel)]="draft.makeId" [placeholder]="'showroom.search.make' | translate" />
-          <p-select [options]="selectedModels()" optionLabel="name" optionValue="id" name="modelId" required [(ngModel)]="draft.modelId" [placeholder]="'showroom.search.model' | translate" />
-          <p-select [options]="selectedVariants()" optionLabel="name" optionValue="id" name="variantId" required [(ngModel)]="draft.variantId" [placeholder]="'showroom.search.variant' | translate" />
-          <p-select [options]="conditionOptions" optionLabel="label" optionValue="value" name="condition" required [(ngModel)]="draft.condition" [placeholder]="'showroom.search.condition' | translate" />
+          <p-select [options]="makes()" optionLabel="name" optionValue="id" name="makeId" required [(ngModel)]="draft.makeId" [placeholder]="'showroom.search.make' | translate" (onChange)="onMakeChange()" />
+          <p-select [options]="models()" optionLabel="name" optionValue="id" name="modelId" required [(ngModel)]="draft.modelId" [placeholder]="'showroom.search.model' | translate" (onChange)="onModelChange()" />
+          <p-select [options]="variants()" optionLabel="name" optionValue="id" name="variantId" required [(ngModel)]="draft.variantId" [placeholder]="'showroom.search.variant' | translate" />
+          <p-select [options]="conditions()" optionLabel="name" optionValue="code" name="condition" required [(ngModel)]="draft.condition" [placeholder]="'showroom.search.condition' | translate" />
           <input pInputText type="number" name="modelYear" required [(ngModel)]="draft.modelYear" [placeholder]="'showroom.fields.year' | translate" />
           <input pInputText type="number" name="price" required [(ngModel)]="draft.price" [placeholder]="'showroom.fields.price' | translate" />
           <input pInputText type="number" name="mileage" required [(ngModel)]="draft.mileage" [placeholder]="'showroom.fields.mileage' | translate" />
@@ -45,6 +50,13 @@ import { formatCurrency, formatMileage } from '../../utils/number-format.util';
         <textarea name="description" required [(ngModel)]="draft.description" [placeholder]="'showroom.fields.description' | translate"></textarea>
         @if (formError()) {
           <div class="state-panel error">{{ formError() | translate }}</div>
+        }
+        @if (fieldErrorList().length > 0) {
+          <div class="state-panel error">
+            @for (error of fieldErrorList(); track error) {
+              <span>{{ error | translate }}</span>
+            }
+          </div>
         }
         <p-button type="submit" icon="pi pi-save" [label]="'showroom.actions.saveDraft' | translate" [disabled]="!canSave()" />
       </form>
@@ -91,11 +103,17 @@ import { formatCurrency, formatMileage } from '../../utils/number-format.util';
 export class ClientListingsPage implements OnInit {
   private readonly catalog = inject(CatalogApiService);
   private readonly listingApi = inject(ClientListingApiService);
+  private readonly optionLoader = inject(VehicleOptionLoaderService);
 
-  readonly taxonomy = signal<ShowroomTaxonomy | null>(null);
+  readonly makes = signal<ShowroomMake[]>([]);
+  readonly models = signal<ShowroomModel[]>([]);
+  readonly variants = signal<ShowroomVariant[]>([]);
+  readonly conditions = signal<VehicleDefinitionCatalogItem[]>([]);
   readonly listings = signal<ClientListingsDto | null>(null);
   readonly loading = signal(false);
   readonly formError = signal<string | null>(null);
+  readonly fieldErrors = signal<Record<string, string>>({});
+  readonly fieldErrorList = signal<string[]>([]);
   readonly price = formatCurrency;
   readonly mileage = formatMileage;
 
@@ -114,21 +132,6 @@ export class ClientListingsPage implements OnInit {
     status: 'DRAFT',
   };
 
-  readonly conditionOptions: { label: string; value: CarListingCondition }[] = [
-    { label: 'New', value: 'NEW' },
-    { label: 'Certified', value: 'CERTIFIED_PRE_OWNED' },
-    { label: 'Used', value: 'USED' },
-    { label: 'Damaged', value: 'DAMAGED' },
-  ];
-
-  selectedModels() {
-    return this.taxonomy()?.makes.find((make) => make.id === this.draft.makeId)?.models ?? [];
-  }
-
-  selectedVariants() {
-    return this.selectedModels().find((model) => model.id === this.draft.modelId)?.variants ?? [];
-  }
-
   canSave(): boolean {
     return Boolean(
       this.draft.title &&
@@ -141,11 +144,13 @@ export class ClientListingsPage implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    await Promise.all([this.loadTaxonomy(), this.loadListings()]);
+    await Promise.all([this.loadOptions(), this.loadListings()]);
   }
 
   async saveListing(): Promise<void> {
     this.formError.set(null);
+    this.fieldErrors.set({});
+    this.fieldErrorList.set([]);
 
     try {
       await firstValueFrom(this.listingApi.create(this.draft));
@@ -159,9 +164,24 @@ export class ClientListingsPage implements OnInit {
         description: '',
       });
       await this.loadListings();
-    } catch {
+    } catch (error) {
+      this.captureFieldErrors(error);
       this.formError.set('showroom.error.validation');
     }
+  }
+
+  onMakeChange(): void {
+    this.draft.modelId = '';
+    this.draft.variantId = '';
+    this.models.set([]);
+    this.variants.set([]);
+    void this.loadModels();
+  }
+
+  onModelChange(): void {
+    this.draft.variantId = '';
+    this.variants.set([]);
+    void this.loadVariants();
   }
 
   async changeStatus(listing: ListingSummaryDto, status: CarListingStatus): Promise<void> {
@@ -196,8 +216,57 @@ export class ClientListingsPage implements OnInit {
     }
   }
 
-  private async loadTaxonomy(): Promise<void> {
-    this.taxonomy.set(await firstValueFrom(this.catalog.taxonomy()));
+  private async loadOptions(): Promise<void> {
+    const [makes, conditions] = await Promise.all([
+      firstValueFrom(this.catalog.options<ShowroomMake>('makes', { limit: 100 })),
+      firstValueFrom(this.catalog.options<VehicleDefinitionCatalogItem>('conditions', { limit: 20 })),
+    ]);
+    this.makes.set(makes.items);
+    this.conditions.set(conditions.items);
+  }
+
+  private async loadModels(): Promise<void> {
+    if (!this.draft.makeId) {
+      return;
+    }
+
+    const state = await firstValueFrom(
+      this.optionLoader.load<ShowroomModel>(
+        {
+          key: 'client-listing-models',
+          entity: 'models',
+          parentKeys: ['makeId'],
+          parentParamMap: { makeId: 'makeId' },
+        },
+        { makeId: this.draft.makeId },
+      ),
+    );
+
+    if (state.status !== 'stale') {
+      this.models.set(state.items);
+    }
+  }
+
+  private async loadVariants(): Promise<void> {
+    if (!this.draft.modelId) {
+      return;
+    }
+
+    const state = await firstValueFrom(
+      this.optionLoader.load<ShowroomVariant>(
+        {
+          key: 'client-listing-trims',
+          entity: 'trims',
+          parentKeys: ['modelId'],
+          parentParamMap: { modelId: 'modelId' },
+        },
+        { modelId: this.draft.modelId },
+      ),
+    );
+
+    if (state.status !== 'stale') {
+      this.variants.set(state.items);
+    }
   }
 
   private async loadListings(): Promise<void> {
@@ -207,6 +276,19 @@ export class ClientListingsPage implements OnInit {
       this.listings.set(await firstValueFrom(this.listingApi.listMine()));
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  private captureFieldErrors(error: unknown): void {
+    if (!(error instanceof HttpErrorResponse)) {
+      return;
+    }
+
+    const fieldErrors = error.error?.fieldErrors as Record<string, string> | undefined;
+
+    if (fieldErrors) {
+      this.fieldErrors.set(fieldErrors);
+      this.fieldErrorList.set(Object.values(fieldErrors));
     }
   }
 }

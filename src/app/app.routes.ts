@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { catalogRouteResolver } from './core/showroom/showroom-route.resolvers';
 
 export const routes: Routes = [
   {
@@ -13,12 +14,16 @@ export const routes: Routes = [
       {
         path: 'used-cars',
         loadComponent: () => import('./features/landing/pages/catalog-page').then((m) => m.CatalogPage),
-        data: { animation: 'used-cars', pageKey: 'usedCars' }
+        runGuardsAndResolvers: 'paramsOrQueryParamsChange',
+        resolve: { catalogData: catalogRouteResolver },
+        data: { animation: 'used-cars', pageKey: 'usedCars', vehicleConditionScope: 'used' }
       },
       {
         path: 'new-cars',
         loadComponent: () => import('./features/landing/pages/catalog-page').then((m) => m.CatalogPage),
-        data: { animation: 'new-cars', pageKey: 'newCars' }
+        runGuardsAndResolvers: 'paramsOrQueryParamsChange',
+        resolve: { catalogData: catalogRouteResolver },
+        data: { animation: 'new-cars', pageKey: 'newCars', vehicleConditionScope: 'new' }
       },
       {
         path: 'services',

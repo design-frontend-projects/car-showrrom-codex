@@ -10,7 +10,11 @@ import {
   ShowroomModel,
   ShowroomTaxonomy,
   ShowroomVariant,
+  VehicleDefinitionCatalogItem,
   VehicleInventoryCountersDto,
+  VehicleOptionEntity,
+  VehicleOptionQueryParams,
+  VehicleOptionResult,
 } from './showroom.models';
 
 @Injectable({ providedIn: 'root' })
@@ -31,6 +35,17 @@ export class CatalogApiService {
 
   variants(modelId?: string): Observable<ShowroomVariant[]> {
     return this.api.get<ShowroomVariant[]>('/showroom/variants', modelId ? { modelId } : {});
+  }
+
+  options<T extends { id: string; name: string }>(
+    entity: VehicleOptionEntity,
+    params: VehicleOptionQueryParams = {},
+  ): Observable<VehicleOptionResult<T>> {
+    return this.api.get<VehicleOptionResult<T>>(`/showroom/options/${entity}`, toParams(params));
+  }
+
+  conditions(params: VehicleOptionQueryParams = {}): Observable<VehicleOptionResult<VehicleDefinitionCatalogItem>> {
+    return this.options<VehicleDefinitionCatalogItem>('conditions', params);
   }
 
   search(params: ListingSearchParams): Observable<ListingSearchResult> {

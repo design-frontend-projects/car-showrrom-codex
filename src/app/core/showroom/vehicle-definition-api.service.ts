@@ -7,16 +7,27 @@ import {
   UsersRolesQueryParams,
   VehicleDefinitionEntity,
   VehicleDefinitionInputDto,
+  VehicleDefinitionListResult,
   VehicleDefinitionQueryParams,
   VehicleDefinitionRecord,
+  VehicleOptionEntity,
+  VehicleOptionQueryParams,
+  VehicleOptionResult,
 } from './showroom.models';
 
 @Injectable({ providedIn: 'root' })
 export class VehicleDefinitionApiService {
   private readonly api = inject(ApiService);
 
-  list(entity: VehicleDefinitionEntity, params: VehicleDefinitionQueryParams = {}): Observable<VehicleDefinitionRecord[]> {
-    return this.api.get<VehicleDefinitionRecord[]>(`/showroom/admin/definitions/${entity}`, toParams(params));
+  list(entity: VehicleDefinitionEntity, params: VehicleDefinitionQueryParams = {}): Observable<VehicleDefinitionListResult> {
+    return this.api.get<VehicleDefinitionListResult>(`/showroom/admin/definitions/${entity}`, toParams(params));
+  }
+
+  options<T extends { id: string; name: string }>(
+    entity: VehicleOptionEntity,
+    params: VehicleOptionQueryParams = {},
+  ): Observable<VehicleOptionResult<T>> {
+    return this.api.get<VehicleOptionResult<T>>(`/showroom/options/${entity}`, toParams(params));
   }
 
   create(entity: VehicleDefinitionEntity, input: VehicleDefinitionInputDto): Observable<VehicleDefinitionRecord> {

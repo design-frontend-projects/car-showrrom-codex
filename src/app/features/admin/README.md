@@ -12,6 +12,10 @@ Routes under `/admin/vehicles` provide admin inventory listing management:
 
 See `vehicles/README.md` for API endpoints and extension notes.
 
+## Define Vehicle Data
+
+Routes under `/admin/definitions/:entity` use a resolver for the initial result envelope and then send search, active-state, sort, parent, page, and page-size query parameters to the server. Definition tables render server-provided totals instead of loading every record for client-side filtering. Dialog selects share the showroom option-loader contract used by vehicle forms.
+
 ## RBAC Administration
 
 Routes under `/admin/rbac` provide tenant access management for authorized administrators:

@@ -1,6 +1,11 @@
 import { Routes } from '@angular/router';
 import { authGuard } from '../../core/auth/auth.guard';
 import { rbacAdminGuard } from '../../core/rbac/rbac.guard';
+import {
+  adminVehicleEditorResolver,
+  adminVehicleOverviewResolver,
+  definitionEntityResolver,
+} from '../../core/showroom/showroom-route.resolvers';
 
 export const adminRoutes: Routes = [
   {
@@ -13,18 +18,21 @@ export const adminRoutes: Routes = [
     path: 'vehicles',
     canActivate: [authGuard, rbacAdminGuard],
     loadComponent: () => import('./vehicles/admin-vehicles-page').then((m) => m.AdminVehiclesPage),
+    resolve: { adminVehicleData: adminVehicleOverviewResolver },
     data: { animation: 'admin-vehicles' }
   },
   {
     path: 'vehicles/create',
     canActivate: [authGuard, rbacAdminGuard],
     loadComponent: () => import('./vehicles/admin-vehicle-editor-page').then((m) => m.AdminVehicleEditorPage),
+    resolve: { adminVehicleEditorData: adminVehicleEditorResolver },
     data: { animation: 'admin-vehicle-create' }
   },
   {
     path: 'vehicles/edit/:id',
     canActivate: [authGuard, rbacAdminGuard],
     loadComponent: () => import('./vehicles/admin-vehicle-editor-page').then((m) => m.AdminVehicleEditorPage),
+    resolve: { adminVehicleEditorData: adminVehicleEditorResolver },
     data: { animation: 'admin-vehicle-edit' }
   },
   {
@@ -43,6 +51,7 @@ export const adminRoutes: Routes = [
     path: 'definitions/:entity',
     canActivate: [authGuard, rbacAdminGuard],
     loadComponent: () => import('./definitions/admin-definition-entity-page').then((m) => m.AdminDefinitionEntityPage),
+    resolve: { definitionData: definitionEntityResolver },
     data: { animation: 'admin-definition-entity', permission: 'showroom.admin.manage' }
   },
   {
