@@ -7,6 +7,7 @@ import type {
   CarListingStatus,
   CarTransmissionType,
   ListingDetailDto,
+  VehicleColorDefinition,
 } from '../../../core/showroom/showroom.models';
 
 export const ADMIN_FEATURES = [
@@ -37,6 +38,8 @@ export interface AdminVehicleFormValue {
   transmission: CarTransmissionType | '';
   fuelType: CarFuelType | '';
   bodyType: CarBodyType | '';
+  exteriorColorId: string | null;
+  interiorColorId: string | null;
   exteriorColorName: string;
   interiorColorName: string;
   features: string[];
@@ -54,6 +57,8 @@ export interface AdminVehiclePreview {
   status: CarListingStatus;
   location: string;
   features: string[];
+  exteriorColorName?: string;
+  interiorColorName?: string;
   imageUrl?: string | null;
 }
 
@@ -73,6 +78,8 @@ export function buildAdminVehiclePayload(value: AdminVehicleFormValue): AdminVeh
     condition: value.condition,
     location: value.location.trim(),
     description: composeAdminDescription(value),
+    exteriorColorId: value.exteriorColorId || null,
+    interiorColorId: value.interiorColorId || null,
     exteriorColorName: value.exteriorColorName.trim() || null,
     interiorColorName: value.interiorColorName.trim() || null,
     status: value.status,
@@ -108,6 +115,8 @@ export function buildPreview(
     status: value.status,
     location: value.location.trim() || 'Showroom',
     features: value.features,
+    exteriorColorName: value.exteriorColorName,
+    interiorColorName: value.interiorColorName,
     imageUrl,
   };
 }
@@ -130,6 +139,8 @@ export function formValueFromListing(listing: ListingDetailDto): Partial<AdminVe
     transmission: listing.variant.transmission,
     fuelType: listing.variant.fuelType,
     bodyType: listing.variant.bodyType,
+    exteriorColorId: listing.exteriorColorId ?? null,
+    interiorColorId: listing.interiorColorId ?? null,
     exteriorColorName: listing.exteriorColorName ?? '',
     interiorColorName: listing.interiorColorName ?? '',
     features: [],
@@ -196,4 +207,8 @@ function formatEnum(value: string): string {
     .filter(Boolean)
     .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
     .join(' ');
+}
+
+export function vehicleColorLabel(color: VehicleColorDefinition | undefined | null, language = 'en'): string {
+  return color?.localizedNames?.[language] || color?.name || '';
 }

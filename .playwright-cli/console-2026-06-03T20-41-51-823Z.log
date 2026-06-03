@@ -1,0 +1,11 @@
+[    4945ms] [INFO] [http] GET /api/auth/session 200 21ms @ http://127.0.0.1:62694/main.js:227
+[    4947ms] [INFO] [http] GET /i18n/en.json 200 20ms @ http://127.0.0.1:62694/main.js:227
+[    4965ms] [INFO] [router] NavigationStart NavigationStart @ http://127.0.0.1:62694/main.js:250
+[    4966ms] [LOG] Angular is running in development mode. @ http://127.0.0.1:62694/@fs/D:/frontend-test-apps/car-showrrom-codex/.angular/cache/22.0.0-rc.2/car-showroom/vite/deps/chunk-KTWMK6HT.js?v=0daf8f0f:11531
+[    4972ms] [INFO] [http] GET /i18n/en.json 200 30ms @ http://127.0.0.1:62694/main.js:227
+[    5049ms] [INFO] [router] NavigationEnd NavigationEnd @ http://127.0.0.1:62694/main.js:250
+[    5107ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://127.0.0.1:62694/api/showroom/inventory-counters:0
+[    5110ms] [WARNING] [http:error] GET /api/showroom/inventory-counters 400 41ms @ http://127.0.0.1:62694/main.js:231
+[   14971ms] [WARNING] NG0506: Angular hydration expected the ApplicationRef.isStable() to emit `true`, but it didn't happen within 10000ms. Angular hydration logic depends on the application becoming stable as a signal to complete hydration process. Find more at https://next.angular.dev/errors/NG0506 @ http://127.0.0.1:62694/@fs/D:/frontend-test-apps/car-showrrom-codex/.angular/cache/22.0.0-rc.2/car-showroom/vite/deps/chunk-KTWMK6HT.js?v=0daf8f0f:11534
+[   20094ms] [ERROR] Failed to load resource: the server responded with a status of 400 (Bad Request) @ http://127.0.0.1:62694/api/showroom/inventory-counters:0
+[   20095ms] [WARNING] [http:error] GET /api/showroom/inventory-counters 400 8ms @ http://127.0.0.1:62694/main.js:231

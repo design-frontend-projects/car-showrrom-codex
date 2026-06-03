@@ -106,6 +106,38 @@ describe('admin showroom vehicle services', () => {
       }),
     );
   });
+
+  it('rejects admin vehicle creation with an invalid exterior color reference', async () => {
+    const tx = {
+      carVariant: { findFirst: vi.fn().mockResolvedValue({ id: 'variant-id' }) },
+      vehicleExteriorColor: { findUnique: vi.fn().mockResolvedValue(null) },
+      carListing: {
+        create: vi.fn(),
+      },
+    } as unknown as ShowroomTx;
+
+    await expect(
+      createAdminVehicle(tx, context, {
+        makeId: '00000000-0000-0000-0000-000000000011',
+        modelId: '00000000-0000-0000-0000-000000000012',
+        variantId: '00000000-0000-0000-0000-000000000013',
+        exteriorColorId: '00000000-0000-0000-0000-000000000099',
+        title: 'Admin vehicle',
+        modelYear: 2026,
+        price: 72000,
+        currency: 'USD',
+        mileage: 10,
+        condition: 'NEW',
+        location: 'Main showroom',
+        description: 'Admin vehicle description long enough for validation.',
+        status: 'ACTIVE',
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      code: 'showroom.error.invalidTaxonomy',
+    });
+    expect(tx.carListing.create).not.toHaveBeenCalled();
+  });
 });
 
 function listingRecord(overrides: Record<string, unknown> = {}) {
@@ -118,6 +150,8 @@ function listingRecord(overrides: Record<string, unknown> = {}) {
     makeId: '00000000-0000-0000-0000-000000000011',
     modelId: '00000000-0000-0000-0000-000000000012',
     variantId: '00000000-0000-0000-0000-000000000013',
+    exteriorColorId: null,
+    interiorColorId: null,
     title: 'Admin vehicle',
     slug: 'admin-vehicle',
     vin: null,

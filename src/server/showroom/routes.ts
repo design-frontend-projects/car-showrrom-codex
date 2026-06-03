@@ -47,6 +47,7 @@ import {
   adminVehicleUpdateSchema,
   adminRequestQuerySchema,
   catalogDefinitionSchema,
+  colorDefinitionSchema,
   imageMetadataSchema,
   imageOrderSchema,
   listingInputSchema,
@@ -716,6 +717,9 @@ function parseVehicleDefinitionBody(entity: VehicleDefinitionEntity, body: unkno
     case 'body-types':
     case 'conditions':
       return parseShowroomPayload(catalogDefinitionSchema, body);
+    case 'exterior-colors':
+    case 'interior-colors':
+      return parseShowroomPayload(colorDefinitionSchema, body);
   }
 }
 

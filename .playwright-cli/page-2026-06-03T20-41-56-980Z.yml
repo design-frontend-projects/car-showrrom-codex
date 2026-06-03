@@ -1,0 +1,117 @@
+- generic [ref=e1]:
+  - generic:
+    - generic:
+      - generic:
+        - banner [ref=e2]:
+          - link "Car showroom home" [ref=e3] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e4]: CS
+            - generic [ref=e5]:
+              - strong [ref=e6]: Car Showroom
+              - generic [ref=e7]: Premium mobility showroom
+          - navigation "Primary" [ref=e8]:
+            - link "Used Cars" [ref=e9] [cursor=pointer]:
+              - /url: /used-cars
+            - link "New Cars" [ref=e10] [cursor=pointer]:
+              - /url: /new-cars
+            - link "Services" [ref=e11] [cursor=pointer]:
+              - /url: /services
+            - link "Rent" [ref=e12] [cursor=pointer]:
+              - /url: /rent
+            - link "About Us" [ref=e13] [cursor=pointer]:
+              - /url: /about-us
+            - link "Contact Us" [ref=e14] [cursor=pointer]:
+              - /url: /contact-us
+          - generic [ref=e15]:
+            - generic "Theme mode" [ref=e16]:
+              - button "Light" [ref=e17] [cursor=pointer]:
+                - generic [ref=e18]: 
+              - button "Dark" [ref=e19] [cursor=pointer]:
+                - generic [ref=e20]: 
+              - button "System" [pressed] [ref=e21] [cursor=pointer]:
+                - generic [ref=e22]: 
+            - button "Switch language" [ref=e23] [cursor=pointer]:
+              - generic [ref=e24]: AR
+            - button "" [ref=e26] [cursor=pointer]:
+              - generic [ref=e27]: 
+        - complementary:
+          - generic:
+            - generic: Start selling
+            - heading "Create your showroom account" [level=2]
+            - paragraph: Register to list a car, save inventory, and manage appointments.
+            - generic:
+              - button " Register":
+                - generic: 
+                - generic: Register
+            - link " Sign In":
+              - /url: /client/sign-in
+              - generic: 
+              - text: Sign In
+        - main:
+          - generic:
+            - generic:
+              - generic:
+                - generic: Premium mobility showroom
+                - heading "Find the right car with showroom-grade clarity." [level=1]
+                - paragraph: Browse certified inventory, compare new arrivals, book services, or rent a premium vehicle from one streamlined workspace.
+                - generic:
+                  - searchbox "Search make, model, budget, or body type"
+                  - generic:
+                    - button " Search":
+                      - generic: 
+                      - generic: Search
+              - generic "Featured vehicle":
+                - generic: Featured
+                - strong: 2025 Mercedes-Benz CLE 300
+                - generic:
+                  - generic:
+                    - term: Price
+                    - definition: $58,800
+                  - generic:
+                    - term: Mileage
+                    - definition: 8,200 mi
+                  - generic:
+                    - term: Status
+                    - definition: Certified
+            - region "Showroom categories":
+              - link " Used Cars Browse inspected pre-owned vehicles":
+                - /url: /used-cars
+                - generic: 
+                - strong: Used Cars
+                - generic: Browse inspected pre-owned vehicles
+              - link " New Cars Browse latest showroom arrivals":
+                - /url: /new-cars
+                - generic: 
+                - strong: New Cars
+                - generic: Browse latest showroom arrivals
+              - link " Services Maintenance, inspection, detailing, and warranty support.":
+                - /url: /services
+                - generic: 
+                - strong: Services
+                - generic: Maintenance, inspection, detailing, and warranty support.
+              - link " Rent Flexible premium rental options for short-term needs.":
+                - /url: /rent
+                - generic: 
+                - strong: Rent
+                - generic: Flexible premium rental options for short-term needs.
+    - generic:
+      - generic:
+        - alert:
+          - generic:
+            - img
+            - generic:
+              - generic: Error
+              - generic: Select a tenant before using showroom data.
+            - generic:
+              - button "Close":
+                - img
+  - dialog "Navigation" [ref=e28]:
+    - button "Close" [active] [ref=e29] [cursor=pointer]: ×
+    - banner [ref=e31]: Navigation
+    - generic [ref=e32]: Browse inventory, services, rentals, and showroom details.
+    - contentinfo [ref=e33]:
+      - generic [ref=e34]: 1 of 3
+      - generic [ref=e35]:
+        - button "← Previous" [disabled]
+        - button "Next →" [ref=e36] [cursor=pointer]
+  - img

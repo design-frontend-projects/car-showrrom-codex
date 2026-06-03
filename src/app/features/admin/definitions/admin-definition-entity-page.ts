@@ -87,6 +87,9 @@ import {
               @for (record of records(); track record.id) {
                 <tr>
                   <td>
+                    @if (colorValue(record)) {
+                      <span class="color-swatch" [style.background]="colorValue(record)"></span>
+                    }
                     <strong>{{ record.name }}</strong>
                     @if (readValue(record, 'code')) {
                       <span>{{ readValue(record, 'code') }}</span>
@@ -143,6 +146,17 @@ import {
               />
               @if (form.get(field.key)?.invalid && form.get(field.key)?.touched) {
                 <small>{{ 'admin.definitions.validation.required' | translate }}</small>
+              }
+            </label>
+          } @else if (field.type === 'color') {
+            <label>
+              <span>{{ field.labelKey | translate }}</span>
+              <div class="color-field">
+                <span class="color-swatch large" [style.background]="formColorValue(field.key)"></span>
+                <input pInputText type="text" [formControlName]="field.key" placeholder="#111111" />
+              </div>
+              @if (form.get(field.key)?.invalid && form.get(field.key)?.touched) {
+                <small>{{ 'admin.definitions.validation.hexColor' | translate }}</small>
               }
             </label>
           } @else {
@@ -205,6 +219,33 @@ import {
         display: block;
         color: var(--muted);
         margin-top: var(--space-1);
+      }
+
+      .color-swatch {
+        display: inline-block !important;
+        width: 1.15rem;
+        height: 1.15rem;
+        margin: 0 var(--space-2) 0 0 !important;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius-sm);
+        vertical-align: middle;
+      }
+
+      :host-context([dir='rtl']) .color-swatch {
+        margin: 0 0 0 var(--space-2) !important;
+      }
+
+      .color-swatch.large {
+        width: 2.4rem;
+        height: 2.4rem;
+        margin: 0 !important;
+      }
+
+      .color-field {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        gap: var(--space-2);
       }
 
       .definition-form {
@@ -380,11 +421,23 @@ export class AdminDefinitionEntityPage implements OnInit {
   }
 
   metadata(record: VehicleDefinitionRecord): string {
-    const values = ['make', 'model', 'country', 'code', 'description']
+    const values = ['make', 'model', 'country', 'code', 'description', 'hexCode']
       .map((key) => this.readValue(record, key))
       .filter((value) => value !== null && value !== undefined && value !== '');
 
     return values.join(' · ') || '-';
+  }
+
+  colorValue(record: VehicleDefinitionRecord): string | null {
+    const value = this.readValue(record, 'hexCode');
+
+    return typeof value === 'string' && value ? value : null;
+  }
+
+  formColorValue(key: string): string {
+    const value = this.form.get(key)?.value;
+
+    return typeof value === 'string' && value ? value : 'transparent';
   }
 
   readValue(record: VehicleDefinitionRecord, key: string): unknown {

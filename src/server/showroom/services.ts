@@ -25,6 +25,7 @@ import {
   mapMake,
   mapModel,
   mapVariant,
+  mapVehicleColorDefinition,
   mapVehicleDefinitionCatalog,
   mapVehicleRequest,
 } from './dto';
@@ -43,6 +44,7 @@ import {
   type AdminVehicleQuery,
   type AdminVehicleUpdateInput,
   type CatalogDefinitionInput,
+  type ColorDefinitionInput,
   type ListingInput,
   type ListingUpdateInput,
   type MakeDefinitionInput,
@@ -58,7 +60,7 @@ import {
 
 export async function listTaxonomy(tx: ShowroomTx, tenantId: string): Promise<unknown> {
   return getCachedVehicleCatalogList(tenantId, 'taxonomy', async () => {
-  const [makes, colors, bodyTypes, fuelTypes, transmissions, engines, conditions] = await Promise.all([
+  const [makes, exteriorColors, interiorColors, bodyTypes, fuelTypes, transmissions, engines, conditions] = await Promise.all([
     tx.carMake.findMany({
       where: { tenantId, isActive: true },
       orderBy: { name: 'asc' },
@@ -75,9 +77,13 @@ export async function listTaxonomy(tx: ShowroomTx, tenantId: string): Promise<un
         },
       },
     }),
-    tx.carColor.findMany({
-      where: { tenantId },
-      orderBy: { name: 'asc' },
+    tx.vehicleExteriorColor.findMany({
+      where: { tenantId, isActive: true },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    }),
+    tx.vehicleInteriorColor.findMany({
+      where: { tenantId, isActive: true },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     }),
     tx.vehicleBodyType.findMany({ where: { tenantId, isActive: true }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
     tx.vehicleFuelType.findMany({ where: { tenantId, isActive: true }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
@@ -94,11 +100,9 @@ export async function listTaxonomy(tx: ShowroomTx, tenantId: string): Promise<un
         variants: model.variants.map(mapVariant),
       })),
     })),
-    colors: colors.map((color) => ({
-      id: color.id,
-      name: color.name,
-      hexCode: color.hexCode,
-    })),
+    colors: exteriorColors.map(mapVehicleColorDefinition),
+    exteriorColors: exteriorColors.map(mapVehicleColorDefinition),
+    interiorColors: interiorColors.map(mapVehicleColorDefinition),
     bodyTypes: bodyTypes.map(mapVehicleDefinitionCatalog),
     fuelTypes: fuelTypes.map(mapVehicleDefinitionCatalog),
     transmissions: transmissions.map(mapVehicleDefinitionCatalog),
@@ -231,6 +235,12 @@ export async function listVehicleDefinitions(
           where: definitionWhere(context.tenantId, query),
           orderBy: [{ isActive: 'desc' }, { sortOrder: 'asc' }, { name: 'asc' }],
         })).map(mapVehicleDefinitionCatalog);
+      case 'exterior-colors':
+      case 'interior-colors':
+        return (await colorDelegate(tx, entity).findMany({
+          where: definitionWhere(context.tenantId, query),
+          orderBy: [{ isActive: 'desc' }, { sortOrder: 'asc' }, { name: 'asc' }],
+        })).map(mapVehicleColorDefinition);
     }
   });
 }
@@ -239,7 +249,7 @@ export async function createVehicleDefinition(
   tx: ShowroomTx,
   context: ShowroomContext,
   entity: VehicleDefinitionEntity,
-  input: MakeDefinitionInput | ModelDefinitionInput | TrimDefinitionInput | CatalogDefinitionInput,
+  input: MakeDefinitionInput | ModelDefinitionInput | TrimDefinitionInput | CatalogDefinitionInput | ColorDefinitionInput,
 ): Promise<unknown> {
   assertAdminVehiclePermission(context);
   const created = await writeVehicleDefinition(tx, context, entity, input);
@@ -254,7 +264,7 @@ export async function updateVehicleDefinition(
   context: ShowroomContext,
   entity: VehicleDefinitionEntity,
   id: string,
-  input: Partial<MakeDefinitionInput | ModelDefinitionInput | TrimDefinitionInput | CatalogDefinitionInput>,
+  input: Partial<MakeDefinitionInput | ModelDefinitionInput | TrimDefinitionInput | CatalogDefinitionInput | ColorDefinitionInput>,
 ): Promise<unknown> {
   assertAdminVehiclePermission(context);
   const updated = await writeVehicleDefinition(tx, context, entity, input, id);
@@ -288,6 +298,10 @@ export async function deactivateVehicleDefinition(
     case 'body-types':
     case 'conditions':
       await catalogDelegate(tx, entity).update({ where: { tenantId_id: { tenantId: context.tenantId, id } }, data: { isActive: false } });
+      break;
+    case 'exterior-colors':
+    case 'interior-colors':
+      await colorDelegate(tx, entity).update({ where: { tenantId_id: { tenantId: context.tenantId, id } }, data: { isActive: false } });
       break;
   }
 
@@ -463,6 +477,12 @@ async function createListingForActor(
   options: { enforceActiveLimit: boolean },
 ): Promise<unknown> {
   await assertTaxonomyHierarchy(tx, context.tenantId, input.makeId, input.modelId, input.variantId);
+  const colorSelection = await resolveListingColorSelection(tx, context.tenantId, {
+    exteriorColorId: input.exteriorColorId ?? null,
+    interiorColorId: input.interiorColorId ?? null,
+    existingExteriorColorId: null,
+    existingInteriorColorId: null,
+  });
 
   const status = input.status ?? CarListingStatus.DRAFT;
 
@@ -487,8 +507,8 @@ async function createListingForActor(
       currency: input.currency,
       mileage: input.mileage,
       condition: input.condition,
-      exteriorColorName: input.exteriorColorName ?? null,
-      interiorColorName: input.interiorColorName ?? null,
+      exteriorColorName: colorSelection.exteriorColorName ?? input.exteriorColorName ?? null,
+      interiorColorName: colorSelection.interiorColorName ?? input.interiorColorName ?? null,
       location: input.location,
       description: input.description,
       status,
@@ -514,6 +534,12 @@ export async function updateListing(
   const variantId = input.variantId ?? existing.variantId;
 
   await assertTaxonomyHierarchy(tx, context.tenantId, makeId, modelId, variantId);
+  const colorSelection = await resolveListingColorSelection(tx, context.tenantId, {
+    exteriorColorId: input.exteriorColorId,
+    interiorColorId: input.interiorColorId,
+    existingExteriorColorId: existing.exteriorColorId,
+    existingInteriorColorId: existing.interiorColorId,
+  });
 
   const priceChanged = input.price !== undefined && Number(existing.price) !== input.price;
   const modelChanged =
@@ -542,8 +568,14 @@ export async function updateListing(
       currency: input.currency,
       mileage: input.mileage,
       condition: input.condition,
-      exteriorColorName: input.exteriorColorName,
-      interiorColorName: input.interiorColorName,
+      exteriorColorName:
+        colorSelection.exteriorColorName !== undefined
+          ? colorSelection.exteriorColorName
+          : input.exteriorColorName,
+      interiorColorName:
+        colorSelection.interiorColorName !== undefined
+          ? colorSelection.interiorColorName
+          : input.interiorColorName,
       location: input.location,
       description: input.description,
       status: input.status,
@@ -1019,7 +1051,7 @@ async function writeVehicleDefinition(
   tx: ShowroomTx,
   context: ShowroomContext,
   entity: VehicleDefinitionEntity,
-  input: Partial<MakeDefinitionInput | ModelDefinitionInput | TrimDefinitionInput | CatalogDefinitionInput>,
+  input: Partial<MakeDefinitionInput | ModelDefinitionInput | TrimDefinitionInput | CatalogDefinitionInput | ColorDefinitionInput>,
   id?: string,
 ): Promise<unknown> {
   switch (entity) {
@@ -1035,6 +1067,9 @@ async function writeVehicleDefinition(
     case 'body-types':
     case 'conditions':
       return writeCatalogDefinition(tx, context.tenantId, entity, input as Partial<CatalogDefinitionInput>, id);
+    case 'exterior-colors':
+    case 'interior-colors':
+      return writeColorDefinition(tx, context.tenantId, entity, input as Partial<ColorDefinitionInput>, id);
   }
 }
 
@@ -1226,6 +1261,48 @@ async function writeCatalogDefinition(
   return mapVehicleDefinitionCatalog(item);
 }
 
+async function writeColorDefinition(
+  tx: ShowroomTx,
+  tenantId: string,
+  entity: Extract<VehicleDefinitionEntity, 'exterior-colors' | 'interior-colors'>,
+  input: Partial<ColorDefinitionInput>,
+  id?: string,
+): Promise<unknown> {
+  const delegate = colorDelegate(tx, entity);
+  const data = removeUndefined({
+    name: input.name,
+    normalizedName: input.name ? normalizeDefinitionName(input.name) : undefined,
+    hexCode: input.hexCode,
+    localizedNames: input.localizedNames,
+    isActive: input.isActive,
+    sortOrder: input.sortOrder,
+  });
+
+  if (id) {
+    const item = await delegate.update({
+      where: { tenantId_id: { tenantId, id } },
+      data,
+    });
+
+    return mapVehicleColorDefinition(item);
+  }
+
+  const name = requireDefinitionName(input.name);
+  const item = await delegate.create({
+    data: {
+      tenantId,
+      name,
+      normalizedName: normalizeDefinitionName(name),
+      hexCode: input.hexCode ?? null,
+      localizedNames: input.localizedNames ?? {},
+      isActive: input.isActive ?? true,
+      sortOrder: input.sortOrder ?? 0,
+    },
+  });
+
+  return mapVehicleColorDefinition(item);
+}
+
 function definitionWhere(tenantId: string, query: VehicleDefinitionQuery): Record<string, unknown> {
   return {
     tenantId,
@@ -1255,6 +1332,18 @@ function catalogDelegate(tx: ShowroomTx, entity: VehicleDefinitionEntity): any {
       return tx.vehicleCondition;
     default:
       throw new ShowroomHttpError(400, 'showroom.error.definitionEntity');
+  }
+}
+
+function colorDelegate(
+  tx: ShowroomTx,
+  entity: Extract<VehicleDefinitionEntity, 'exterior-colors' | 'interior-colors'>,
+): any {
+  switch (entity) {
+    case 'exterior-colors':
+      return tx.vehicleExteriorColor;
+    case 'interior-colors':
+      return tx.vehicleInteriorColor;
   }
 }
 
@@ -1472,6 +1561,49 @@ async function assertTaxonomyHierarchy(
       variantId: 'showroom.error.invalidTaxonomy',
     });
   }
+}
+
+async function resolveListingColorSelection(
+  tx: ShowroomTx,
+  tenantId: string,
+  input: {
+    exteriorColorId?: string | null;
+    interiorColorId?: string | null;
+    existingExteriorColorId: string | null;
+    existingInteriorColorId: string | null;
+  },
+): Promise<{ exteriorColorName?: string | null; interiorColorName?: string | null }> {
+  const [exteriorColor, interiorColor] = await Promise.all([
+    input.exteriorColorId
+      ? tx.vehicleExteriorColor.findUnique({ where: { tenantId_id: { tenantId, id: input.exteriorColorId } } })
+      : null,
+    input.interiorColorId
+      ? tx.vehicleInteriorColor.findUnique({ where: { tenantId_id: { tenantId, id: input.interiorColorId } } })
+      : null,
+  ]);
+
+  if (input.exteriorColorId && (!exteriorColor || (!exteriorColor.isActive && input.exteriorColorId !== input.existingExteriorColorId))) {
+    throw new ShowroomHttpError(400, 'showroom.error.invalidTaxonomy', {
+      exteriorColorId: 'showroom.error.invalidTaxonomy',
+    });
+  }
+
+  if (input.interiorColorId && (!interiorColor || (!interiorColor.isActive && input.interiorColorId !== input.existingInteriorColorId))) {
+    throw new ShowroomHttpError(400, 'showroom.error.invalidTaxonomy', {
+      interiorColorId: 'showroom.error.invalidTaxonomy',
+    });
+  }
+
+  return {
+    exteriorColorName:
+      input.exteriorColorId === undefined
+        ? undefined
+        : exteriorColor?.name ?? null,
+    interiorColorName:
+      input.interiorColorId === undefined
+        ? undefined
+        : interiorColor?.name ?? null,
+  };
 }
 
 async function assertActiveListingLimit(

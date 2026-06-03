@@ -144,6 +144,52 @@ describe('admin vehicle definition services', () => {
     });
   });
 
+  it('manages exterior color definitions with swatches and localized names', async () => {
+    const first = colorRecord('old-color-id', 'Old white');
+    const second = colorRecord('new-color-id', 'New white');
+    const created = colorRecord('created-color-id', 'Pearl white');
+    const tx = {
+      vehicleExteriorColor: {
+        findMany: vi.fn().mockResolvedValueOnce([first]).mockResolvedValueOnce([second]),
+        create: vi.fn().mockResolvedValue(created),
+      },
+      rbacAuditEvent: {
+        create: vi.fn(),
+      },
+    };
+
+    await expect(listVehicleDefinitions(tx as never, adminContext, 'exterior-colors', { includeInactive: false })).resolves.toEqual([
+      expect.objectContaining({ id: 'old-color-id', hexCode: '#ffffff' }),
+    ]);
+    await expect(
+      createVehicleDefinition(tx as never, adminContext, 'exterior-colors', {
+        name: 'Pearl white',
+        hexCode: '#ffffff',
+        localizedNames: { ar: 'أبيض لؤلؤي' },
+      }),
+    ).resolves.toEqual(expect.objectContaining({ id: 'created-color-id' }));
+    await expect(listVehicleDefinitions(tx as never, adminContext, 'exterior-colors', { includeInactive: false })).resolves.toEqual([
+      expect.objectContaining({ id: 'new-color-id' }),
+    ]);
+
+    expect(tx.vehicleExteriorColor.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        tenantId: 'tenant-id',
+        name: 'Pearl white',
+        normalizedName: 'pearl-white',
+        hexCode: '#ffffff',
+        localizedNames: { ar: 'أبيض لؤلؤي' },
+      }),
+    });
+    expect(tx.rbacAuditEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        action: 'vehicle-definition.exterior-colors.created',
+        targetType: 'exterior-colors',
+        targetId: 'created-color-id',
+      }),
+    });
+  });
+
   it('rejects orphaned model definitions and deactivates valid definitions instead of hard deleting', async () => {
     const tx = {
       carMake: {
@@ -187,6 +233,21 @@ function makeRecord(id: string, name: string) {
     normalizedName: name.toLowerCase().replace(/\s+/g, '-'),
     country: null,
     isActive: true,
+    createdAt: new Date('2026-06-03T12:00:00.000Z'),
+    updatedAt: new Date('2026-06-03T12:00:00.000Z'),
+  };
+}
+
+function colorRecord(id: string, name: string) {
+  return {
+    id,
+    tenantId: 'tenant-id',
+    name,
+    normalizedName: name.toLowerCase().replace(/\s+/g, '-'),
+    hexCode: '#ffffff',
+    localizedNames: {},
+    isActive: true,
+    sortOrder: 10,
     createdAt: new Date('2026-06-03T12:00:00.000Z'),
     updatedAt: new Date('2026-06-03T12:00:00.000Z'),
   };

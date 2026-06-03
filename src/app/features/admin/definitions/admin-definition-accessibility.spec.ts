@@ -24,6 +24,18 @@ describe('admin definition accessibility hooks', () => {
     expect(usersRoles).toContain('<th>{{ \'admin.usersRoles.fields.user\' | translate }}</th>');
     expect(usersRoles).not.toContain('editRole');
   });
+
+  it('renders color definition swatches and vehicle editor color dropdowns through localized controls', () => {
+    const definitionEntity = readSource('src/app/features/admin/definitions/admin-definition-entity-page.ts');
+    const vehicleEditor = readSource('src/app/features/admin/vehicles/admin-vehicle-editor-page.ts');
+
+    expect(definitionEntity).toContain('color-swatch');
+    expect(definitionEntity).toContain('admin.definitions.validation.hexColor');
+    expect(vehicleEditor).toContain('formControlName="exteriorColorId"');
+    expect(vehicleEditor).toContain('formControlName="interiorColorId"');
+    expect(vehicleEditor).toContain('admin.vehicleEditor.color.emptyExterior');
+    expect(vehicleEditor).toContain('admin.vehicleEditor.color.emptyInterior');
+  });
 });
 
 function readSource(path: string): string {

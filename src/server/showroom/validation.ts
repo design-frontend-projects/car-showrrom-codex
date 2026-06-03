@@ -12,6 +12,12 @@ import { ShowroomHttpError } from './errors';
 const uuidSchema = z.string().uuid();
 const textSchema = z.string().trim().min(1).max(200);
 const optionalTextSchema = z.string().trim().max(500).optional().nullable();
+const hexColorSchema = z
+  .string()
+  .trim()
+  .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, 'showroom.validation.hexColor')
+  .optional()
+  .nullable();
 const moneySchema = z.coerce.number().finite().min(0).max(99_999_999);
 const yearSchema = z.coerce.number().int().min(1900).max(new Date().getFullYear() + 2);
 const mileageSchema = z.coerce.number().int().min(0).max(5_000_000);
@@ -26,6 +32,8 @@ export const vehicleDefinitionEntitySchema = z.enum([
   'fuel-types',
   'body-types',
   'conditions',
+  'exterior-colors',
+  'interior-colors',
 ]);
 
 export const searchQuerySchema = z
@@ -199,6 +207,10 @@ export const trimDefinitionSchema = z.object({
 
 export const catalogDefinitionSchema = definitionBaseSchema;
 
+export const colorDefinitionSchema = definitionBaseSchema.extend({
+  hexCode: hexColorSchema,
+});
+
 export const usersRolesQuerySchema = z.object({
   q: z.string().trim().max(120).optional(),
   role: z.string().trim().max(80).optional(),
@@ -238,4 +250,5 @@ export type MakeDefinitionInput = z.infer<typeof makeDefinitionSchema>;
 export type ModelDefinitionInput = z.infer<typeof modelDefinitionSchema>;
 export type TrimDefinitionInput = z.infer<typeof trimDefinitionSchema>;
 export type CatalogDefinitionInput = z.infer<typeof catalogDefinitionSchema>;
+export type ColorDefinitionInput = z.infer<typeof colorDefinitionSchema>;
 export type UsersRolesQuery = z.infer<typeof usersRolesQuerySchema>;

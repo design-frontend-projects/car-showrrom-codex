@@ -1,0 +1,11 @@
+[    3056ms] [INFO] [http] GET /api/auth/session 200 42ms @ http://127.0.0.1:62694/main.js:227
+[    3059ms] [INFO] [http] GET /i18n/en.json 200 43ms @ http://127.0.0.1:62694/main.js:227
+[    3095ms] [INFO] [router] NavigationStart NavigationStart @ http://127.0.0.1:62694/main.js:250
+[    3097ms] [LOG] Angular is running in development mode. @ http://127.0.0.1:62694/@fs/D:/frontend-test-apps/car-showrrom-codex/.angular/cache/22.0.0-rc.2/car-showroom/vite/deps/chunk-KTWMK6HT.js?v=0daf8f0f:11531
+[    3105ms] [INFO] [http] GET /i18n/en.json 200 65ms @ http://127.0.0.1:62694/main.js:227
+[    3136ms] [INFO] [http] GET /api/auth/session 200 7ms @ http://127.0.0.1:62694/main.js:227
+[    3139ms] [INFO] [router] NavigationStart NavigationStart @ http://127.0.0.1:62694/main.js:250
+[    3143ms] [INFO] [http] GET /api/auth/session 200 13ms @ http://127.0.0.1:62694/main.js:227
+[    3238ms] [INFO] [router] NavigationEnd NavigationEnd @ http://127.0.0.1:62694/main.js:250
+[   13102ms] [WARNING] NG0506: Angular hydration expected the ApplicationRef.isStable() to emit `true`, but it didn't happen within 10000ms. Angular hydration logic depends on the application becoming stable as a signal to complete hydration process. Find more at https://next.angular.dev/errors/NG0506 @ http://127.0.0.1:62694/@fs/D:/frontend-test-apps/car-showrrom-codex/.angular/cache/22.0.0-rc.2/car-showroom/vite/deps/chunk-KTWMK6HT.js?v=0daf8f0f:11534
+[   22220ms] [INFO] [http] GET /i18n/ar.json 200 13ms @ http://127.0.0.1:62694/main.js:227

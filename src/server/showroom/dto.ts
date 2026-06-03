@@ -9,7 +9,9 @@ import type {
   VehicleBodyType,
   VehicleCondition,
   VehicleEngine,
+  VehicleExteriorColor,
   VehicleFuelType,
+  VehicleInteriorColor,
   VehicleTransmission,
   User,
   VehicleRequest,
@@ -43,6 +45,10 @@ export function mapListingSummary(listing: ListingWithDetails): Record<string, u
     condition: listing.condition,
     status: listing.status,
     location: listing.location,
+    exteriorColorId: listing.exteriorColorId,
+    interiorColorId: listing.interiorColorId,
+    exteriorColorName: listing.exteriorColorName,
+    interiorColorName: listing.interiorColorName,
     make: mapMake(listing.make),
     model: mapModel(listing.model),
     variant: mapVariant(listing.variant),
@@ -56,6 +62,8 @@ export function mapListingDetail(listing: ListingWithDetails): Record<string, un
   return {
     ...mapListingSummary(listing),
     vin: listing.vin,
+    exteriorColorId: listing.exteriorColorId,
+    interiorColorId: listing.interiorColorId,
     exteriorColorName: listing.exteriorColorName,
     interiorColorName: listing.interiorColorName,
     description: listing.description,
@@ -145,6 +153,21 @@ export function mapVehicleDefinitionCatalog(
     name: item.name,
     code: item.code,
     description: item.description,
+    localizedNames: item.localizedNames,
+    isActive: item.isActive,
+    sortOrder: item.sortOrder,
+    createdAt: item.createdAt.toISOString(),
+    updatedAt: item.updatedAt.toISOString(),
+  };
+}
+
+export function mapVehicleColorDefinition(
+  item: VehicleExteriorColor | VehicleInteriorColor,
+): Record<string, unknown> {
+  return {
+    id: item.id,
+    name: item.name,
+    hexCode: item.hexCode,
     localizedNames: item.localizedNames,
     isActive: item.isActive,
     sortOrder: item.sortOrder,

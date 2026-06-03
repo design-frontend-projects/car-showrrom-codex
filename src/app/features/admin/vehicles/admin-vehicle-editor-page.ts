@@ -3,6 +3,7 @@ import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angula
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -25,6 +26,7 @@ import {
   ListingDetailDto,
   ListingImageDto,
   ShowroomTaxonomy,
+  VehicleColorDefinition,
 } from '../../../core/showroom/showroom.models';
 import { formatCurrency, formatMileage } from '../../../utils/number-format.util';
 import {
@@ -35,6 +37,7 @@ import {
   createImageQueueItem,
   formValueFromListing,
   reorderQueue,
+  vehicleColorLabel,
 } from './admin-vehicle-form.util';
 
 @Component({
@@ -50,6 +53,7 @@ import {
     SelectModule,
     TagModule,
     TextareaModule,
+    TranslatePipe,
   ],
   template: `
     <section class="page-header compact-header">
@@ -140,12 +144,60 @@ import {
                 <p-select [options]="conditionOptions" optionLabel="label" optionValue="value" formControlName="condition" />
               </label>
               <label>
-                <span>Exterior color</span>
-                <input pInputText formControlName="exteriorColorName" />
+                <span>{{ 'admin.vehicleEditor.fields.exteriorColor' | translate }}</span>
+                <p-select
+                  [options]="colorOptions('exterior')"
+                  optionLabel="name"
+                  optionValue="id"
+                  formControlName="exteriorColorId"
+                  [filter]="true"
+                  [showClear]="true"
+                  [placeholder]="'admin.vehicleEditor.placeholders.exteriorColor' | translate"
+                  [emptyMessage]="'admin.vehicleEditor.color.emptyExterior' | translate"
+                >
+                  <ng-template #item let-color>
+                    <span class="color-option">
+                      <span class="color-swatch" [style.background]="color.hexCode || 'transparent'"></span>
+                      <span>{{ colorLabel(color) }}</span>
+                    </span>
+                  </ng-template>
+                  <ng-template #selectedItem let-color>
+                    @if (color) {
+                      <span class="color-option">
+                        <span class="color-swatch" [style.background]="color.hexCode || 'transparent'"></span>
+                        <span>{{ colorLabel(color) }}</span>
+                      </span>
+                    }
+                  </ng-template>
+                </p-select>
               </label>
               <label>
-                <span>Interior color</span>
-                <input pInputText formControlName="interiorColorName" />
+                <span>{{ 'admin.vehicleEditor.fields.interiorColor' | translate }}</span>
+                <p-select
+                  [options]="colorOptions('interior')"
+                  optionLabel="name"
+                  optionValue="id"
+                  formControlName="interiorColorId"
+                  [filter]="true"
+                  [showClear]="true"
+                  [placeholder]="'admin.vehicleEditor.placeholders.interiorColor' | translate"
+                  [emptyMessage]="'admin.vehicleEditor.color.emptyInterior' | translate"
+                >
+                  <ng-template #item let-color>
+                    <span class="color-option">
+                      <span class="color-swatch" [style.background]="color.hexCode || 'transparent'"></span>
+                      <span>{{ colorLabel(color) }}</span>
+                    </span>
+                  </ng-template>
+                  <ng-template #selectedItem let-color>
+                    @if (color) {
+                      <span class="color-option">
+                        <span class="color-swatch" [style.background]="color.hexCode || 'transparent'"></span>
+                        <span>{{ colorLabel(color) }}</span>
+                      </span>
+                    }
+                  </ng-template>
+                </p-select>
               </label>
             </div>
             <label>
@@ -251,6 +303,12 @@ import {
               <span>{{ price(preview().price) }}</span>
               <span>{{ mileage(preview().mileage) }}</span>
               <span>{{ preview().condition }}</span>
+              @if (preview().exteriorColorName) {
+                <span>{{ preview().exteriorColorName }}</span>
+              }
+              @if (preview().interiorColorName) {
+                <span>{{ preview().interiorColorName }}</span>
+              }
               <span>{{ preview().location }}</span>
             </div>
             <div class="admin-tags">
@@ -276,6 +334,8 @@ import {
         <dl>
           <div><dt>Price</dt><dd>{{ price(preview().price) }}</dd></div>
           <div><dt>Mileage</dt><dd>{{ mileage(preview().mileage) }}</dd></div>
+          <div><dt>{{ 'admin.vehicleEditor.fields.exteriorColor' | translate }}</dt><dd>{{ preview().exteriorColorName || '-' }}</dd></div>
+          <div><dt>{{ 'admin.vehicleEditor.fields.interiorColor' | translate }}</dt><dd>{{ preview().interiorColorName || '-' }}</dd></div>
           <div><dt>Status</dt><dd>{{ preview().status }}</dd></div>
           <div><dt>Queued images</dt><dd>{{ queuedImages().length }}</dd></div>
         </dl>
@@ -432,6 +492,28 @@ import {
         gap: var(--space-2);
       }
 
+      .color-option {
+        display: inline-grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        gap: var(--space-2);
+        max-width: 100%;
+      }
+
+      .color-option span:last-child {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .color-swatch {
+        width: 1.1rem;
+        height: 1.1rem;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius-sm);
+      }
+
       .confirm-preview {
         display: grid;
         gap: var(--space-3);
@@ -487,6 +569,7 @@ export class AdminVehicleEditorPage implements OnInit {
   private readonly messages = inject(MessageService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly translate = inject(TranslateService);
 
   readonly loading = signal(false);
   readonly submitting = signal(false);
@@ -520,6 +603,8 @@ export class AdminVehicleEditorPage implements OnInit {
     transmission: ['' as CarTransmissionType | ''],
     fuelType: ['' as CarFuelType | ''],
     bodyType: ['' as CarBodyType | ''],
+    exteriorColorId: [null as string | null],
+    interiorColorId: [null as string | null],
     exteriorColorName: [''],
     interiorColorName: [''],
     features: [[] as string[]],
@@ -551,6 +636,18 @@ export class AdminVehicleEditorPage implements OnInit {
       model: model?.name,
       variant: variant?.name,
     };
+  });
+
+  readonly selectedExteriorColor = computed(() => {
+    const value = this.formValue();
+
+    return this.colorOptions('exterior').find((color) => color.id === value.exteriorColorId) ?? null;
+  });
+
+  readonly selectedInteriorColor = computed(() => {
+    const value = this.formValue();
+
+    return this.colorOptions('interior').find((color) => color.id === value.interiorColorId) ?? null;
   });
 
   readonly preview = computed(() => {
@@ -634,6 +731,39 @@ export class AdminVehicleEditorPage implements OnInit {
       transmission: variant.transmission,
       bodyType: variant.bodyType,
     });
+  }
+
+  colorOptions(side: 'exterior' | 'interior'): VehicleColorDefinition[] {
+    const taxonomy = this.taxonomy();
+    const base = side === 'exterior' ? taxonomy?.exteriorColors ?? [] : taxonomy?.interiorColors ?? [];
+    const selectedId = side === 'exterior' ? this.form.controls.exteriorColorId.value : this.form.controls.interiorColorId.value;
+    const listing = this.listing();
+
+    if (!selectedId || base.some((color) => color.id === selectedId)) {
+      return base;
+    }
+
+    const legacyName = side === 'exterior' ? listing?.exteriorColorName : listing?.interiorColorName;
+
+    if (!legacyName) {
+      return base;
+    }
+
+    return [
+      {
+        id: selectedId,
+        name: legacyName,
+        hexCode: null,
+        localizedNames: {},
+        isActive: false,
+        sortOrder: Number.MAX_SAFE_INTEGER,
+      },
+      ...base,
+    ];
+  }
+
+  colorLabel(color: VehicleColorDefinition | null | undefined): string {
+    return vehicleColorLabel(color, this.translate.currentLang || this.translate.defaultLang || 'en');
   }
 
   isFeatureSelected(feature: string): boolean {
@@ -813,7 +943,15 @@ export class AdminVehicleEditorPage implements OnInit {
   }
 
   private readFormValue(): AdminVehicleFormValue {
-    return this.form.getRawValue();
+    const raw = this.form.getRawValue();
+    const exteriorColor = this.colorOptions('exterior').find((color) => color.id === raw.exteriorColorId);
+    const interiorColor = this.colorOptions('interior').find((color) => color.id === raw.interiorColorId);
+
+    return {
+      ...raw,
+      exteriorColorName: raw.exteriorColorId ? this.colorLabel(exteriorColor) : '',
+      interiorColorName: raw.interiorColorId ? this.colorLabel(interiorColor) : '',
+    };
   }
 }
 

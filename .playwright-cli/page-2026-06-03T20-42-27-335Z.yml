@@ -1,0 +1,68 @@
+- generic [ref=e4]:
+  - banner [ref=e5]:
+    - link "Car showroom home" [ref=e6] [cursor=pointer]:
+      - /url: /
+      - generic [ref=e7]: CS
+      - generic [ref=e8]:
+        - strong [ref=e9]: Car Showroom
+        - generic [ref=e10]: Premium mobility showroom
+    - navigation "Primary" [ref=e11]:
+      - link "Used Cars" [ref=e12] [cursor=pointer]:
+        - /url: /used-cars
+      - link "New Cars" [ref=e13] [cursor=pointer]:
+        - /url: /new-cars
+      - link "Services" [ref=e14] [cursor=pointer]:
+        - /url: /services
+      - link "Rent" [ref=e15] [cursor=pointer]:
+        - /url: /rent
+      - link "About Us" [ref=e16] [cursor=pointer]:
+        - /url: /about-us
+      - link "Contact Us" [ref=e17] [cursor=pointer]:
+        - /url: /contact-us
+    - generic [ref=e18]:
+      - generic "Theme mode" [ref=e19]:
+        - button "Light" [ref=e20] [cursor=pointer]:
+          - generic [ref=e21]: 
+        - button "Dark" [ref=e22] [cursor=pointer]:
+          - generic [ref=e23]: 
+        - button "System" [pressed] [ref=e24] [cursor=pointer]:
+          - generic [ref=e25]: 
+      - button "Switch language" [ref=e26] [cursor=pointer]:
+        - generic [ref=e27]: AR
+      - button "" [active] [ref=e29] [cursor=pointer]:
+        - generic [ref=e30]: 
+  - complementary [ref=e31]:
+    - generic [ref=e32]:
+      - generic [ref=e33]: Start selling
+      - heading "Create your showroom account" [level=2] [ref=e34]
+      - paragraph [ref=e35]: Register to list a car, save inventory, and manage appointments.
+      - button " Register" [ref=e37] [cursor=pointer]:
+        - generic [ref=e38]: 
+        - generic [ref=e39]: Register
+      - link " Sign In" [ref=e40] [cursor=pointer]:
+        - /url: /client/sign-in
+        - generic [ref=e41]: 
+        - text: Sign In
+  - main [ref=e42]:
+    - generic [ref=e43]:
+      - generic [ref=e44]:
+        - generic [ref=e45]: Vehicle definitions
+        - heading "Exterior colors" [level=1] [ref=e46]
+        - paragraph [ref=e47]: Maintain paint colors and swatches for vehicle listings.
+        - generic [ref=e48]:
+          - button " Back to definitions" [ref=e50] [cursor=pointer]:
+            - generic [ref=e51]: 
+            - generic [ref=e52]: Back to definitions
+          - button "Create" [ref=e54] [cursor=pointer]:
+            - img [ref=e56]
+            - generic [ref=e57]: Create
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - searchbox "Search definitions" [ref=e60]
+          - generic [ref=e61]:
+            - checkbox "Include inactive" [checked] [ref=e62]
+            - generic [ref=e63]: Include inactive
+          - button "Filter" [ref=e65] [cursor=pointer]:
+            - img [ref=e67]
+            - generic [ref=e70]: Filter
+        - generic [ref=e72]: Definitions could not be loaded.

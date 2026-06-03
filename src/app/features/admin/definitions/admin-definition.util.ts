@@ -14,7 +14,7 @@ export interface DefinitionConfig {
 }
 
 export type DefinitionField =
-  | { key: keyof VehicleDefinitionInputDto; labelKey: string; type: 'text' | 'number'; required?: boolean }
+  | { key: keyof VehicleDefinitionInputDto; labelKey: string; type: 'text' | 'number' | 'color'; required?: boolean }
   | { key: keyof VehicleDefinitionInputDto; labelKey: string; type: 'select'; options: DefinitionOptionSource; required?: boolean }
   | { key: keyof VehicleDefinitionInputDto; labelKey: string; type: 'checkbox' };
 
@@ -62,6 +62,7 @@ export const DEFINITION_CONFIGS: readonly DefinitionConfig[] = [
     ],
   },
   ...(['engines', 'transmissions', 'fuel-types', 'body-types', 'conditions'] as const).map(catalogConfig),
+  ...(['exterior-colors', 'interior-colors'] as const).map(colorConfig),
 ];
 
 export function getDefinitionConfig(entity: VehicleDefinitionEntity): DefinitionConfig {
@@ -93,15 +94,31 @@ export function patchDefinitionForm(form: ReturnType<FormBuilder['group']>, reco
     return;
   }
 
-  form.patchValue(record as unknown as Record<string, unknown>);
+  form.patchValue({
+    ...(record as unknown as Record<string, unknown>),
+    localizedNameEn: readLocalizedName(record, 'en'),
+    localizedNameAr: readLocalizedName(record, 'ar'),
+  });
 }
 
 export function readDefinitionInput(formValue: Record<string, unknown>): VehicleDefinitionInputDto {
-  return Object.fromEntries(
+  const localizedNames = Object.fromEntries(
+    [
+      ['en', formValue['localizedNameEn']],
+      ['ar', formValue['localizedNameAr']],
+    ].filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].trim().length > 0),
+  );
+
+  const normalized = Object.fromEntries(
     Object.entries(formValue)
+      .filter(([key]) => key !== 'localizedNameEn' && key !== 'localizedNameAr')
       .map(([key, value]) => [key, value === '' ? null : value])
       .filter((entry) => entry[1] !== undefined),
   ) as VehicleDefinitionInputDto;
+
+  return Object.keys(localizedNames).length > 0
+    ? { ...normalized, localizedNames }
+    : normalized;
 }
 
 export function entityToKey(entity: VehicleDefinitionEntity): string {
@@ -122,4 +139,27 @@ function catalogConfig(entity: Extract<VehicleDefinitionEntity, 'engines' | 'tra
       { key: 'isActive', labelKey: 'admin.definitions.fields.active', type: 'checkbox' },
     ],
   };
+}
+
+function colorConfig(entity: Extract<VehicleDefinitionEntity, 'exterior-colors' | 'interior-colors'>): DefinitionConfig {
+  return {
+    entity,
+    titleKey: `admin.definitions.entities.${entityToKey(entity)}.title`,
+    descriptionKey: `admin.definitions.entities.${entityToKey(entity)}.copy`,
+    icon: entity === 'exterior-colors' ? 'palette' : 'swatch-book',
+    fields: [
+      { key: 'name', labelKey: 'admin.definitions.fields.name', type: 'text', required: true },
+      { key: 'hexCode', labelKey: 'admin.definitions.fields.hexCode', type: 'color' },
+      { key: 'localizedNameEn', labelKey: 'admin.definitions.fields.localizedNameEn', type: 'text' },
+      { key: 'localizedNameAr', labelKey: 'admin.definitions.fields.localizedNameAr', type: 'text' },
+      { key: 'sortOrder', labelKey: 'admin.definitions.fields.sortOrder', type: 'number' },
+      { key: 'isActive', labelKey: 'admin.definitions.fields.active', type: 'checkbox' },
+    ],
+  };
+}
+
+function readLocalizedName(record: VehicleDefinitionRecord, language: string): string {
+  const localizedNames = 'localizedNames' in record ? record.localizedNames : undefined;
+
+  return localizedNames?.[language] ?? '';
 }

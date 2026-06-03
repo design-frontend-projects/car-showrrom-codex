@@ -229,6 +229,14 @@
         "conditions": {
           "title": "Conditions",
           "copy": "Maintain listing condition catalog values."
+        },
+        "exteriorColors": {
+          "title": "Exterior colors",
+          "copy": "Maintain paint colors and swatches for vehicle listings."
+        },
+        "interiorColors": {
+          "title": "Interior colors",
+          "copy": "Maintain cabin colors and swatches for vehicle listings."
         }
       },
       "fields": {
@@ -241,6 +249,9 @@
         "driveTrain": "Drivetrain",
         "engine": "Engine",
         "fuelType": "Fuel type",
+        "hexCode": "Swatch color",
+        "localizedNameAr": "Arabic label",
+        "localizedNameEn": "English label",
         "make": "Make",
         "metadata": "Metadata",
         "model": "Model",
@@ -268,6 +279,7 @@
         "loading": "Loading definitions"
       },
       "validation": {
+        "hexColor": "Use a hex color such as #111111.",
         "required": "This field is required."
       },
       "errors": {
@@ -306,6 +318,20 @@
       },
       "errors": {
         "load": "Users and roles could not be loaded."
+      }
+    },
+    "vehicleEditor": {
+      "fields": {
+        "exteriorColor": "Exterior color",
+        "interiorColor": "Interior color"
+      },
+      "placeholders": {
+        "exteriorColor": "Select exterior color",
+        "interiorColor": "Select interior color"
+      },
+      "color": {
+        "emptyExterior": "No exterior colors are active. Add colors in vehicle definitions.",
+        "emptyInterior": "No interior colors are active. Add colors in vehicle definitions."
       }
     }
   },

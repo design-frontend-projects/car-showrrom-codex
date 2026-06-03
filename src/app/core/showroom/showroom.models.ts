@@ -58,11 +58,22 @@ export interface ShowroomVariant extends ShowroomTaxonomyItem {
 
 export interface ShowroomColor extends ShowroomTaxonomyItem {
   hexCode?: string | null;
+  localizedNames?: Record<string, string>;
+  isActive?: boolean;
+  sortOrder?: number;
 }
 
 export interface VehicleDefinitionCatalogItem extends ShowroomTaxonomyItem {
   code?: string | null;
   description?: string | null;
+  localizedNames?: Record<string, string>;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface VehicleColorDefinition extends ShowroomColor {
   localizedNames?: Record<string, string>;
   isActive: boolean;
   sortOrder: number;
@@ -109,13 +120,16 @@ export type VehicleDefinitionEntity =
   | 'transmissions'
   | 'fuel-types'
   | 'body-types'
-  | 'conditions';
+  | 'conditions'
+  | 'exterior-colors'
+  | 'interior-colors';
 
 export type VehicleDefinitionRecord =
   | AdminMakeDefinition
   | AdminModelDefinition
   | AdminTrimDefinition
-  | VehicleDefinitionCatalogItem;
+  | VehicleDefinitionCatalogItem
+  | VehicleColorDefinition;
 
 export interface VehicleDefinitionQueryParams {
   q?: string;
@@ -139,7 +153,10 @@ export interface VehicleDefinitionInputDto {
   driveTrain?: string | null;
   code?: string | null;
   description?: string | null;
+  hexCode?: string | null;
   localizedNames?: Record<string, string>;
+  localizedNameEn?: string | null;
+  localizedNameAr?: string | null;
   sortOrder?: number;
   isActive?: boolean;
 }
@@ -167,6 +184,8 @@ export interface UsersRolesQueryParams {
 export interface ShowroomTaxonomy {
   makes: ShowroomMake[];
   colors: ShowroomColor[];
+  exteriorColors: VehicleColorDefinition[];
+  interiorColors: VehicleColorDefinition[];
   bodyTypes: VehicleDefinitionCatalogItem[];
   fuelTypes: VehicleDefinitionCatalogItem[];
   transmissions: VehicleDefinitionCatalogItem[];
@@ -201,6 +220,10 @@ export interface ListingSummaryDto {
   make: ShowroomMake;
   model: ShowroomModel;
   variant: ShowroomVariant;
+  exteriorColorId?: string | null;
+  interiorColorId?: string | null;
+  exteriorColorName?: string | null;
+  interiorColorName?: string | null;
   primaryImage?: ListingImageDto | null;
   imageCount: number;
   updatedAt: string;
@@ -208,8 +231,6 @@ export interface ListingSummaryDto {
 
 export interface ListingDetailDto extends ListingSummaryDto {
   vin?: string | null;
-  exteriorColorName?: string | null;
-  interiorColorName?: string | null;
   description: string;
   seller?: { id: string; displayName: string } | null;
   images: ListingImageDto[];

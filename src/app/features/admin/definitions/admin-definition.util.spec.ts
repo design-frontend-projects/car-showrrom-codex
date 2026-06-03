@@ -12,8 +12,19 @@ describe('admin definition utilities', () => {
 
   it('maps dashed API entities to translation key segments', () => {
     expect(entityToKey('fuel-types')).toBe('fuelTypes');
+    expect(entityToKey('exterior-colors')).toBe('exteriorColors');
     expect(entityToKey('body-types')).toBe('bodyTypes');
     expect(entityToKey('transmissions')).toBe('transmissions');
+  });
+
+  it('builds color definition forms with swatch and localized label fields', () => {
+    const colorConfig = getDefinitionConfig('exterior-colors');
+    const form = createDefinitionForm(fb, colorConfig);
+
+    expect(form.controls['name']).toBeDefined();
+    expect(form.controls['hexCode']).toBeDefined();
+    expect(form.controls['localizedNameEn']).toBeDefined();
+    expect(form.controls['localizedNameAr']).toBeDefined();
   });
 
   it('builds required validators for parent-child definition forms', () => {
@@ -68,6 +79,26 @@ describe('admin definition utilities', () => {
       code: null,
       sortOrder: 0,
       isActive: false,
+    });
+  });
+
+  it('converts localized color label fields into localizedNames payload', () => {
+    expect(
+      readDefinitionInput({
+        name: 'Pearl white',
+        hexCode: '#ffffff',
+        localizedNameEn: 'Pearl white',
+        localizedNameAr: 'أبيض لؤلؤي',
+        isActive: true,
+      }),
+    ).toEqual({
+      name: 'Pearl white',
+      hexCode: '#ffffff',
+      localizedNames: {
+        en: 'Pearl white',
+        ar: 'أبيض لؤلؤي',
+      },
+      isActive: true,
     });
   });
 });

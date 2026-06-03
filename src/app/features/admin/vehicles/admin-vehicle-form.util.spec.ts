@@ -4,6 +4,7 @@ import {
   createImageQueueItem,
   reorderQueue,
   validateAdminImageFile,
+  vehicleColorLabel,
 } from './admin-vehicle-form.util';
 import type { AdminVehicleFormValue } from './admin-vehicle-form.util';
 
@@ -25,6 +26,8 @@ describe('admin vehicle form utilities', () => {
     transmission: 'AUTOMATIC',
     fuelType: 'HYBRID',
     bodyType: 'SUV',
+    exteriorColorId: 'exterior-color-id',
+    interiorColorId: 'interior-color-id',
     exteriorColorName: 'Pearl white',
     interiorColorName: 'Black',
     features: ['360 camera', 'Premium audio'],
@@ -37,6 +40,8 @@ describe('admin vehicle form utilities', () => {
     expect(payload.title).toBe('2026 Test SUV');
     expect(payload.price).toBe(74000);
     expect(payload.status).toBe('ACTIVE');
+    expect(payload.exteriorColorId).toBe('exterior-color-id');
+    expect(payload.interiorColorId).toBe('interior-color-id');
     expect(payload.description).toContain('Engine: 2.0L hybrid');
     expect(payload.description).toContain('Features: 360 camera, Premium audio');
   });
@@ -52,6 +57,24 @@ describe('admin vehicle form utilities', () => {
     expect(preview.subtitle).toBe('Test SUV Premium 2026');
     expect(preview.imageUrl).toBe('/media/listings/test.webp');
     expect(preview.discount).toBe(6000);
+    expect(preview.exteriorColorName).toBe('Pearl white');
+  });
+
+  it('uses localized color labels with canonical fallback', () => {
+    expect(
+      vehicleColorLabel(
+        {
+          id: 'color-id',
+          name: 'Pearl white',
+          hexCode: '#ffffff',
+          localizedNames: { ar: 'أبيض لؤلؤي' },
+          isActive: true,
+          sortOrder: 10,
+        },
+        'ar',
+      ),
+    ).toBe('أبيض لؤلؤي');
+    expect(vehicleColorLabel({ id: 'color-id', name: 'Black', isActive: true, sortOrder: 20 }, 'ar')).toBe('Black');
   });
 
   it('validates image type and size before queueing uploads', () => {

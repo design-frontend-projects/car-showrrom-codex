@@ -1,0 +1,61 @@
+- generic [ref=e4]:
+  - banner [ref=e5]:
+    - link "Car showroom home" [ref=e6] [cursor=pointer]:
+      - /url: /
+      - generic [ref=e7]: CS
+      - generic [ref=e8]:
+        - strong [ref=e9]: Car Showroom
+        - generic [ref=e10]: معرض تنقل فاخر
+    - navigation "Primary" [ref=e11]:
+      - link "السيارات المستعملة" [ref=e73] [cursor=pointer]:
+        - /url: /used-cars
+      - link "السيارات الجديدة" [ref=e74] [cursor=pointer]:
+        - /url: /new-cars
+      - link "الخدمات" [ref=e75] [cursor=pointer]:
+        - /url: /services
+      - link "التأجير" [ref=e76] [cursor=pointer]:
+        - /url: /rent
+      - link "من نحن" [ref=e77] [cursor=pointer]:
+        - /url: /about-us
+      - link "اتصل بنا" [ref=e78] [cursor=pointer]:
+        - /url: /contact-us
+    - generic [ref=e18]:
+      - generic "وضع السمة" [ref=e79]:
+        - button "فاتح" [ref=e80] [cursor=pointer]:
+          - generic [ref=e21]: 
+        - button "داكن" [ref=e81] [cursor=pointer]:
+          - generic [ref=e23]: 
+        - button "النظام" [pressed] [ref=e82] [cursor=pointer]:
+          - generic [ref=e25]: 
+      - button "تبديل اللغة" [active] [ref=e83] [cursor=pointer]:
+        - generic [ref=e27]: EN
+      - button "" [ref=e29] [cursor=pointer]:
+        - generic [ref=e30]: 
+  - complementary [ref=e31]:
+    - generic [ref=e32]:
+      - generic [ref=e33]: ابدأ البيع
+      - heading "أنشئ حسابك في المعرض" [level=2] [ref=e84]
+      - paragraph [ref=e35]: سجل لإضافة سيارة، وحفظ المخزون، وإدارة المواعيد.
+      - button " تسجيل" [ref=e85] [cursor=pointer]:
+        - generic [ref=e38]: 
+        - generic [ref=e39]: تسجيل
+      - link " تسجيل الدخول" [ref=e86] [cursor=pointer]:
+        - /url: /client/sign-in
+        - generic [ref=e41]: 
+        - text: تسجيل الدخول
+  - main [ref=e42]:
+    - generic [ref=e88]:
+      - generic [ref=e89]:
+        - generic [ref=e90]: تسجيل الدخول
+        - heading "سجل الدخول إلى حسابك" [level=1] [ref=e91]
+        - paragraph [ref=e92]: استخدم بيانات اعتماد المعرض للوصول إلى الملف الشخصي والإعدادات والقوائم.
+      - generic [ref=e93]:
+        - textbox "البريد الإلكتروني" [ref=e94]
+        - textbox "كلمة المرور" [ref=e95]
+        - generic [ref=e96]:
+          - checkbox "إبقائي مسجلا" [ref=e97]
+          - generic [ref=e98]: إبقائي مسجلا
+        - button " تسجيل الدخول" [disabled] [ref=e100]:
+          - generic [ref=e101]: 
+          - generic [ref=e102]: تسجيل الدخول
+        - button "نسيت كلمة المرور؟" [ref=e103] [cursor=pointer]
