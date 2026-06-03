@@ -9,10 +9,13 @@ export function roleGuard(requiredRoles: readonly string[]): CanActivateFn {
   return () => resolveGuard((auth) => requiredRoles.some((role) => auth.user()?.roles.includes(role)));
 }
 
+export const strictAdminRoleGuard = roleGuard(['admin', 'system-owner']);
+
 export function permissionGuard(requiredPermission: string): CanActivateFn {
   return () =>
     resolveGuard((auth) => {
       const user = auth.user();
+      console.log(user);
 
       return Boolean(
         user?.permissions.includes(requiredPermission) ||
