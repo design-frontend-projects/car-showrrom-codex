@@ -226,6 +226,81 @@ describe('AuthSignalStore', () => {
     expect(store.challenge()?.challengeToken).toBe('challenge');
   });
 
+  it('routes onboarding-required login responses without authenticating the store', async () => {
+    const onboarding = {
+      status: 'onboardingRequired' as const,
+      challengeToken: 'challenge-token',
+      invitation: {
+        email: 'invitee@example.com',
+        displayName: 'Invitee User',
+        expiresAt: '2026-06-04T08:00:00.000Z',
+      },
+    };
+    const api = {
+      login: vi.fn(() => of(onboarding)),
+    };
+    const persistence = {
+      clear: vi.fn(),
+      read: vi.fn(() => null),
+      write: vi.fn(),
+    };
+    const tenantContext = {
+      setSelectedTenantId: vi.fn(),
+      clearSelectedTenantId: vi.fn(),
+    };
+
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: AuthApiService, useValue: api },
+        { provide: AuthPersistenceService, useValue: persistence },
+        { provide: TenantContextService, useValue: tenantContext },
+      ],
+    });
+
+    const store = TestBed.inject(AuthSignalStore);
+    await store.login({ email: 'invitee@example.com', password: 'Password1!' });
+
+    expect(store.requiresOnboarding()).toBe(true);
+    expect(store.isAuthenticated()).toBe(false);
+    expect(store.onboarding()?.invitation.email).toBe('invitee@example.com');
+    expect(persistence.clear).toHaveBeenCalled();
+    expect(tenantContext.clearSelectedTenantId).toHaveBeenCalled();
+  });
+
+  it('clears onboarding state after successful invitation acceptance', async () => {
+    const api = {
+      lookupInvitationOnboarding: vi.fn(() =>
+        of({
+          status: 'onboardingRequired' as const,
+          challengeToken: 'challenge-token',
+          invitation: {
+            email: 'invitee@example.com',
+            displayName: null,
+            expiresAt: '2026-06-04T08:00:00.000Z',
+          },
+        }),
+      ),
+      acceptInvitationOnboarding: vi.fn(() => of({ ok: true as const })),
+    };
+
+    TestBed.configureTestingModule({
+      providers: [{ provide: AuthApiService, useValue: api }],
+    });
+
+    const store = TestBed.inject(AuthSignalStore);
+    await store.lookupInvitationOnboarding({ token: 'invitation-token-with-enough-entropy' });
+    expect(store.requiresOnboarding()).toBe(true);
+
+    await store.acceptInvitationOnboarding({
+      challengeToken: 'challenge-token',
+      displayName: 'Invitee User',
+      password: 'Password1!',
+    });
+
+    expect(store.onboarding()).toBeNull();
+    expect(store.isAuthenticated()).toBe(false);
+  });
+
   it('records translated error keys from failed auth requests', async () => {
     const api = {
       login: vi.fn(() => throwError(() => ({ error: { code: 'auth.error.invalidCredentials' } }))),

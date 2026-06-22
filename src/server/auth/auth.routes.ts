@@ -6,7 +6,9 @@ import { randomToken } from './auth.crypto';
 import { AuthHttpError, isAuthHttpError } from './auth.errors';
 import {
   completePasswordReset,
+  completeInvitationOnboarding,
   disableTwoFactor,
+  lookupInvitationOnboarding,
   loginUser,
   readCurrentProfile as readCurrentProfileService,
   readSession,
@@ -23,6 +25,8 @@ import {
 } from './auth.service';
 import {
   loginSchema,
+  invitationOnboardingAcceptSchema,
+  invitationOnboardingLookupSchema,
   parseBody,
   regenerateBackupCodesSchema,
   registerSchema,
@@ -94,6 +98,18 @@ export function registerAuthRoutes(app: Express, dependencies: AuthRouteDependen
     response.status(200).json(result.dto);
   }));
 
+  router.post('/invitations/lookup', onboardingLimiter, asyncHandler(async (request, response) => {
+    response.status(200).json(
+      await lookupInvitationOnboarding(parseBody(invitationOnboardingLookupSchema, request.body)),
+    );
+  }));
+
+  router.post('/invitations/accept', onboardingLimiter, asyncHandler(async (request, response) => {
+    response.status(200).json(
+      await completeInvitationOnboarding(parseBody(invitationOnboardingAcceptSchema, request.body)),
+    );
+  }));
+
   router.post('/refresh', requireCsrf, asyncHandler(async (request, response) => {
     const result = await refreshSession(requireSessionToken(request), getMetadata(request));
     setAuthCookies(response, result.sessionToken, result.csrfToken, result.expiresAt);
@@ -161,6 +177,7 @@ const loginLimiter = createLimiter(authConfig.loginRateLimitMax);
 const registerLimiter = createLimiter(authConfig.registerRateLimitMax);
 const resetLimiter = createLimiter(authConfig.resetRateLimitMax);
 const twoFactorLimiter = createLimiter(authConfig.twoFactorRateLimitMax);
+const onboardingLimiter = createLimiter(authConfig.resetRateLimitMax);
 
 function createLimiter(max: number) {
   return rateLimit({

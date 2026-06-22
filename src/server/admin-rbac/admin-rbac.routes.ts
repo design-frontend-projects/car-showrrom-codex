@@ -4,7 +4,6 @@ import { withRbacDatabaseContext } from '../rbac/db-context';
 import { assertUuid, HttpError } from '../rbac/request-context';
 import { requireAdminRbacContext, requireCsrf } from './admin-rbac.auth';
 import {
-  acceptInvitation,
   assignPermissionToRole,
   assignRoleToUser,
   createInvitation,
@@ -30,7 +29,6 @@ import {
   updateUser,
 } from './admin-rbac.repository';
 import {
-  acceptInvitationSchema,
   auditQuerySchema,
   createUserSchema,
   inviteUserSchema,
@@ -46,23 +44,8 @@ import {
 
 type AsyncRoute = (request: Request, response: Response) => Promise<void>;
 
-const PUBLIC_BYPASS_TENANT_ID = '00000000-0000-4000-8000-000000000000';
-
 export function registerAdminRbacRoutes(app: Express): void {
   const router = Router();
-
-  router.post(
-    '/invitations/accept',
-    handle(async (request, response) => {
-      const body = parseBody(acceptInvitationSchema, request.body);
-      const result = await withRbacDatabaseContext(
-        { tenantId: PUBLIC_BYPASS_TENANT_ID, bypassTenantIsolation: true },
-        (tx) => acceptInvitation(tx, body),
-      );
-
-      response.status(200).json(result);
-    }),
-  );
 
   router.get(
     '/users',

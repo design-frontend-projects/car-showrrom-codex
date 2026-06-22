@@ -2,7 +2,7 @@ import { DatePipe, JsonPipe } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { TranslatePipe } from '@ngx-translate/core';
+import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { LucideAngularModule } from 'lucide-angular';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -147,6 +147,7 @@ import { RbacSignalStore } from '../../../state/rbac.store';
 })
 export class RbacUsersPage implements OnInit {
   readonly store = inject(RbacSignalStore);
+  private readonly translate = inject(TranslateService);
   readonly userDialogOpen = signal(false);
   readonly inviteDialogOpen = signal(false);
   readonly editingUser = signal<RbacUser | null>(null);
@@ -208,13 +209,13 @@ export class RbacUsersPage implements OnInit {
   }
 
   disableUser(user: RbacUser): void {
-    if (window.confirm('Disable this user and revoke active sessions?')) {
+    if (window.confirm(this.translate.instant('rbac.dialogs.disableUser'))) {
       void this.store.disableUser(user.id);
     }
   }
 
   resetUser(user: RbacUser): void {
-    if (window.confirm('Create a password reset challenge for this user?')) {
+    if (window.confirm(this.translate.instant('rbac.dialogs.resetUser'))) {
       void this.store.initiateReset(user.id);
     }
   }
@@ -222,7 +223,7 @@ export class RbacUsersPage implements OnInit {
 
 @Component({
   selector: 'app-rbac-invitations-page',
-  imports: [ButtonModule, CardModule, DatePipe, LucideAngularModule, RouterLink, TranslatePipe],
+  imports: [ButtonModule, CardModule, DatePipe, FormsModule, InputTextModule, LucideAngularModule, RouterLink, TranslatePipe],
   template: `
     <section class="page-header compact-header">
       <span class="eyebrow">{{ 'rbac.nav.invitations' | translate }}</span>
@@ -231,44 +232,153 @@ export class RbacUsersPage implements OnInit {
     </section>
     <section class="rbac-workspace">
       <div class="rbac-toolbar">
-        <a routerLink="/admin/rbac/users" class="text-link">{{ 'rbac.actions.backToUsers' | translate }}</a>
+        <nav class="rbac-tabs" aria-label="RBAC sections">
+          <a routerLink="/admin/rbac/users">{{ 'rbac.nav.users' | translate }}</a>
+          <a routerLink="/admin/rbac/invitations" class="active">{{ 'rbac.nav.invitations' | translate }}</a>
+          <a routerLink="/admin/rbac/roles">{{ 'rbac.nav.roles' | translate }}</a>
+          <a routerLink="/admin/rbac/permissions">{{ 'rbac.nav.permissions' | translate }}</a>
+          <a routerLink="/admin/rbac/audit">{{ 'rbac.nav.audit' | translate }}</a>
+        </nav>
       </div>
-      <div class="rbac-table-wrap">
+      <div class="rbac-toolbar">
+        <div class="segmented-control" role="group" [attr.aria-label]="'rbac.invitations.filter' | translate">
+          @for (option of statusFilters; track option.value) {
+            <button type="button" [class.active]="statusFilter() === option.value" (click)="statusFilter.set(option.value)">
+              {{ option.labelKey | translate }}
+            </button>
+          }
+        </div>
+        <input
+          pInputText
+          type="search"
+          [ngModel]="searchText()"
+          (ngModelChange)="searchText.set($event)"
+          [placeholder]="'rbac.invitations.search' | translate"
+        />
+      </div>
+
+      @if (store.error()) {
+        <div class="state-panel error">{{ store.error() | translate }}</div>
+      } @else if (store.invitationsStatus() === 'loading') {
+        <div class="state-panel">{{ 'rbac.invitations.loading' | translate }}</div>
+      } @else if (filteredInvitations().length === 0) {
+        <div class="state-panel">{{ 'rbac.invitations.empty' | translate }}</div>
+      } @else {
+        <div class="rbac-table-wrap">
         <table class="rbac-table">
-          <thead><tr><th>{{ 'rbac.fields.email' | translate }}</th><th>{{ 'rbac.fields.status' | translate }}</th><th>{{ 'rbac.fields.expiresAt' | translate }}</th><th>{{ 'rbac.fields.actions' | translate }}</th></tr></thead>
+          <thead>
+            <tr>
+              <th>{{ 'rbac.fields.user' | translate }}</th>
+              <th>{{ 'rbac.fields.roles' | translate }}</th>
+              <th>{{ 'rbac.fields.status' | translate }}</th>
+              <th>{{ 'rbac.fields.inviter' | translate }}</th>
+              <th>{{ 'rbac.fields.resultingUser' | translate }}</th>
+              <th>{{ 'rbac.fields.timestamps' | translate }}</th>
+              <th>{{ 'rbac.fields.actions' | translate }}</th>
+            </tr>
+          </thead>
           <tbody>
-            @for (invitation of store.invitations(); track invitation.id) {
+            @for (invitation of filteredInvitations(); track invitation.id) {
               <tr>
                 <td><strong>{{ invitation.displayName || invitation.email }}</strong><span>{{ invitation.email }}</span></td>
-                <td><span class="status-chip">{{ invitation.status }}</span></td>
-                <td>{{ invitation.expiresAt | date: 'medium' }}</td>
+                <td>
+                  <div class="chip-row">
+                    @for (role of invitation.targetRoles; track role.id) {
+                      <span class="status-chip">{{ role.name }}</span>
+                    } @empty {
+                      <span>{{ 'rbac.fallback.noRoles' | translate }}</span>
+                    }
+                  </div>
+                </td>
+                <td>
+                  <span class="status-chip" [class.danger]="invitation.status === 'revoked' || invitation.isExpired">
+                    {{ statusLabel(invitation.status, invitation.isExpired) | translate }}
+                  </span>
+                </td>
+                <td><strong>{{ invitation.inviter?.displayName || ('rbac.fallback.system' | translate) }}</strong><span>{{ invitation.inviter?.email }}</span></td>
+                <td>
+                  @if (invitation.resultingUser) {
+                    <strong>{{ invitation.resultingUser.displayName }}</strong><span>{{ invitation.resultingUser.email }}</span>
+                  } @else {
+                    <span>{{ 'rbac.fallback.notAccepted' | translate }}</span>
+                  }
+                </td>
+                <td>
+                  <strong>{{ 'rbac.fields.expiresAt' | translate }}: {{ invitation.expiresAt | date: 'short' }}</strong>
+                  <span>{{ 'rbac.fields.acceptedAt' | translate }}: {{ invitation.acceptedAt ? (invitation.acceptedAt | date: 'short') : ('rbac.fallback.never' | translate) }}</span>
+                  <span>{{ 'rbac.fields.revokedAt' | translate }}: {{ invitation.revokedAt ? (invitation.revokedAt | date: 'short') : ('rbac.fallback.never' | translate) }}</span>
+                  <span>{{ 'rbac.fields.resentAt' | translate }}: {{ invitation.resentAt ? (invitation.resentAt | date: 'short') : ('rbac.fallback.never' | translate) }}</span>
+                </td>
                 <td>
                   <div class="icon-actions">
-                    <button type="button" [disabled]="invitation.status !== 'pending'" (click)="store.resendInvitation(invitation.id)"><lucide-icon name="refresh-cw" size="17" /></button>
-                    <button type="button" [disabled]="invitation.status !== 'pending'" (click)="revoke(invitation.id)"><lucide-icon name="x" size="17" /></button>
+                    <button type="button" [title]="'rbac.actions.resend' | translate" [disabled]="!invitation.canResend" (click)="resend(invitation.id)">
+                      <lucide-icon name="refresh-cw" size="17" />
+                    </button>
+                    <button type="button" [title]="'rbac.actions.revoke' | translate" [disabled]="!invitation.canRevoke" (click)="revoke(invitation.id)">
+                      <lucide-icon name="x" size="17" />
+                    </button>
                   </div>
                 </td>
               </tr>
-            } @empty {
-              <tr><td colspan="4">{{ 'rbac.invitations.empty' | translate }}</td></tr>
             }
           </tbody>
         </table>
       </div>
+      }
     </section>
   `,
 })
 export class RbacInvitationsPage implements OnInit {
   readonly store = inject(RbacSignalStore);
+  private readonly translate = inject(TranslateService);
+  readonly statusFilter = signal<'all' | 'pending' | 'accepted' | 'revoked' | 'expired'>('all');
+  readonly searchText = signal('');
+  readonly statusFilters = [
+    { labelKey: 'rbac.status.all', value: 'all' as const },
+    { labelKey: 'rbac.invitationStatus.pending', value: 'pending' as const },
+    { labelKey: 'rbac.invitationStatus.accepted', value: 'accepted' as const },
+    { labelKey: 'rbac.invitationStatus.revoked', value: 'revoked' as const },
+    { labelKey: 'rbac.invitationStatus.expired', value: 'expired' as const },
+  ];
+  readonly filteredInvitations = computed(() => {
+    const status = this.statusFilter();
+    const query = this.searchText().trim().toLowerCase();
+
+    return this.store.invitations().filter((invitation) => {
+      const statusMatches =
+        status === 'all' ||
+        (status === 'expired' ? invitation.isExpired : invitation.status === status);
+      const textMatches =
+        !query ||
+        invitation.email.toLowerCase().includes(query) ||
+        (invitation.displayName ?? '').toLowerCase().includes(query) ||
+        invitation.targetRoles.some((role) => role.name.toLowerCase().includes(query)) ||
+        (invitation.resultingUser?.email ?? '').toLowerCase().includes(query);
+
+      return statusMatches && textMatches;
+    });
+  });
 
   ngOnInit(): void {
     void this.store.loadInvitations();
   }
 
   revoke(invitationId: string): void {
-    if (window.confirm('Revoke this invitation?')) {
+    if (window.confirm(this.translate.instant('rbac.dialogs.revokeInvitation'))) {
       void this.store.revokeInvitation(invitationId);
     }
+  }
+
+  resend(invitationId: string): void {
+    if (window.confirm(this.translate.instant('rbac.dialogs.resendInvitation'))) {
+      void this.store.resendInvitation(invitationId);
+    }
+  }
+
+  statusLabel(status: string, expired: boolean): string {
+    return expired && status === 'pending'
+      ? 'rbac.invitationStatus.expired'
+      : `rbac.invitationStatus.${status}`;
   }
 }
 
@@ -321,6 +431,7 @@ export class RbacInvitationsPage implements OnInit {
 })
 export class RbacRolesPage implements OnInit {
   readonly store = inject(RbacSignalStore);
+  private readonly translate = inject(TranslateService);
   readonly roleDialogOpen = signal(false);
   readonly editingRole = signal<RbacRole | null>(null);
   roleForm = { name: '', description: '' };
@@ -346,7 +457,7 @@ export class RbacRolesPage implements OnInit {
   }
 
   deleteRole(role: RbacRole): void {
-    if (!role.isSystem && window.confirm('Delete this role?')) {
+    if (!role.isSystem && window.confirm(this.translate.instant('rbac.dialogs.deleteRole'))) {
       void this.store.deleteRole(role.id);
     }
   }

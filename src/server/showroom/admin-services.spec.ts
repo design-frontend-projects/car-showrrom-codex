@@ -19,6 +19,7 @@ describe('admin showroom vehicle services', () => {
         count: vi.fn(),
         create: vi.fn().mockResolvedValue(listingRecord({ status: 'ACTIVE' })),
       },
+      vehicleCondition: { findFirst: vi.fn().mockResolvedValue({ id: 'condition-id' }) },
     } as unknown as ShowroomTx;
 
     await createAdminVehicle(tx, context, {
@@ -42,6 +43,8 @@ describe('admin showroom vehicle services', () => {
         data: expect.objectContaining({
           sellerUserId: context.userId,
           status: 'ACTIVE',
+          condition: 'NEW',
+          conditionId: 'condition-id',
           publishedAt: expect.any(Date),
         }),
       }),
@@ -70,6 +73,7 @@ describe('admin showroom vehicle services', () => {
         ),
       },
       carVariant: { findFirst: vi.fn().mockResolvedValue({ id: 'variant-id' }) },
+      vehicleCondition: { findFirst: vi.fn().mockResolvedValue({ id: 'updated-condition-id' }) },
       carPriceHistory: { create: vi.fn().mockResolvedValue({}) },
       carModelHistory: { create: vi.fn().mockResolvedValue({}) },
     } as unknown as ShowroomTx;
@@ -80,9 +84,19 @@ describe('admin showroom vehicle services', () => {
       variantId: '00000000-0000-0000-0000-000000000023',
       modelYear: 2026,
       price: 68000,
+      condition: 'USED',
       priceChangeReason: 'Campaign pricing',
       modelChangeReason: 'Correct trim',
     });
+
+    expect(tx.carListing.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          condition: 'USED',
+          conditionId: 'updated-condition-id',
+        }),
+      }),
+    );
 
     expect(tx.carPriceHistory.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -114,6 +128,7 @@ describe('admin showroom vehicle services', () => {
       carListing: {
         create: vi.fn(),
       },
+      vehicleCondition: { findFirst: vi.fn().mockResolvedValue({ id: 'condition-id' }) },
     } as unknown as ShowroomTx;
 
     await expect(
@@ -135,6 +150,38 @@ describe('admin showroom vehicle services', () => {
     ).rejects.toMatchObject({
       status: 400,
       code: 'showroom.error.invalidTaxonomy',
+    });
+    expect(tx.carListing.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects admin vehicle creation when the condition has no active catalog match', async () => {
+    const tx = {
+      carVariant: { findFirst: vi.fn().mockResolvedValue({ id: 'variant-id' }) },
+      vehicleCondition: { findFirst: vi.fn().mockResolvedValue(null) },
+      carListing: {
+        create: vi.fn(),
+      },
+    } as unknown as ShowroomTx;
+
+    await expect(
+      createAdminVehicle(tx, context, {
+        makeId: '00000000-0000-0000-0000-000000000011',
+        modelId: '00000000-0000-0000-0000-000000000012',
+        variantId: '00000000-0000-0000-0000-000000000013',
+        title: 'Admin vehicle',
+        modelYear: 2026,
+        price: 72000,
+        currency: 'USD',
+        mileage: 10,
+        condition: 'NEW',
+        location: 'Main showroom',
+        description: 'Admin vehicle description long enough for validation.',
+        status: 'ACTIVE',
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      code: 'showroom.error.validation',
+      fieldErrors: { condition: 'showroom.validation.invalid_value' },
     });
     expect(tx.carListing.create).not.toHaveBeenCalled();
   });

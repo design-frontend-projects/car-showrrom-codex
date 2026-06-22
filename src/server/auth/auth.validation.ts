@@ -29,6 +29,31 @@ export const loginSchema = z.object({
   remember: z.boolean().optional(),
 });
 
+export const invitationOnboardingLookupSchema = z
+  .object({
+    token: z.string().min(24).optional(),
+    challengeToken: z.string().min(24).optional(),
+  })
+  .strict()
+  .refine((value) => Boolean(value.token) !== Boolean(value.challengeToken), {
+    message: 'auth.error.invitationChallengeInvalid',
+    path: ['token'],
+  });
+
+export const invitationOnboardingAcceptSchema = z
+  .object({
+    token: z.string().min(24).optional(),
+    challengeToken: z.string().min(24).optional(),
+    displayName: z.string().trim().min(2).max(120),
+    phone: z.string().trim().max(32).nullable().optional(),
+    password: passwordSchema,
+  })
+  .strict()
+  .refine((value) => Boolean(value.token) !== Boolean(value.challengeToken), {
+    message: 'auth.error.invitationChallengeInvalid',
+    path: ['token'],
+  });
+
 export const resetRequestSchema = z.object({
   email: emailSchema,
 });
@@ -63,6 +88,8 @@ export const regenerateBackupCodesSchema = twoFactorDisableSchema;
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type InvitationOnboardingLookupInput = z.infer<typeof invitationOnboardingLookupSchema>;
+export type InvitationOnboardingAcceptInput = z.infer<typeof invitationOnboardingAcceptSchema>;
 export type ResetRequestInput = z.infer<typeof resetRequestSchema>;
 export type ResetVerifyInput = z.infer<typeof resetVerifySchema>;
 export type ResetCompleteInput = z.infer<typeof resetCompleteSchema>;

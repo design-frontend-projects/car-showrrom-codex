@@ -1,11 +1,10 @@
 import type { Prisma } from '../../generated/prisma/client';
 import { authConfig } from '../auth/auth.config';
-import { hashSecret, randomToken } from '../auth/auth.crypto';
+import { hashSecret, randomToken, signChallenge, verifyChallenge } from '../auth/auth.crypto';
 import { hashPassword } from '../auth/password.service';
 import type { RbacTransactionClient } from '../rbac/db-context';
 import { HttpError } from '../rbac/request-context';
 import type {
-  AcceptInvitationInput,
   AuditQuery,
   CreateUserInput,
   InviteUserInput,
@@ -29,7 +28,17 @@ export interface PageResult<T> {
   total: number;
 }
 
+export interface InvitationAcceptanceInput {
+  token?: string;
+  challengeToken?: string;
+  displayName: string;
+  password: string;
+  phone?: string | null;
+}
+
 const SECRET_KEY_PATTERN = /(password|hash|token|otp|secret|backup|csrf|session)/i;
+const INVITATION_CHALLENGE_PURPOSE = 'invitation-onboarding';
+const INVITATION_CHALLENGE_TTL_MINUTES = 15;
 
 export async function listUsers(
   tx: RbacTransactionClient,
@@ -239,13 +248,14 @@ export async function removeRoleFromUser(
 }
 
 export async function listInvitations(tx: RbacTransactionClient, tenantId: string) {
-  return (
-    await tx.userInvitation.findMany({
+  const invitations = await tx.userInvitation.findMany({
       where: { tenantId },
       orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
       include: invitationInclude,
-    })
-  ).map(mapInvitation);
+  });
+  const roleMap = await loadInvitationRoleMap(tx, tenantId, invitations);
+
+  return invitations.map((invitation) => mapInvitation(invitation, roleMap));
 }
 
 export async function createInvitation(
@@ -281,7 +291,7 @@ export async function createInvitation(
     },
   });
 
-  return mapInvitation(invitation);
+  return mapInvitation(invitation, await loadInvitationRoleMap(tx, actor.tenantId, [invitation]));
 }
 
 export async function revokeInvitation(
@@ -289,6 +299,23 @@ export async function revokeInvitation(
   actor: AuditActor,
   invitationId: string,
 ) {
+  const existing = await tx.userInvitation.findUnique({
+    where: {
+      tenantId_id: {
+        tenantId: actor.tenantId,
+        id: invitationId,
+      },
+    },
+  });
+
+  if (!existing) {
+    throw new HttpError(404, 'Invitation was not found.');
+  }
+
+  if (existing.status !== 'pending' || existing.acceptedAt || existing.revokedAt) {
+    throw new HttpError(409, 'Only pending invitations can be revoked.');
+  }
+
   const invitation = await tx.userInvitation.update({
     where: {
       tenantId_id: {
@@ -310,7 +337,7 @@ export async function revokeInvitation(
     metadata: { email: invitation.email },
   });
 
-  return mapInvitation(invitation);
+  return mapInvitation(invitation, await loadInvitationRoleMap(tx, actor.tenantId, [invitation]));
 }
 
 export async function resendInvitation(
@@ -318,6 +345,23 @@ export async function resendInvitation(
   actor: AuditActor,
   invitationId: string,
 ) {
+  const existing = await tx.userInvitation.findUnique({
+    where: {
+      tenantId_id: {
+        tenantId: actor.tenantId,
+        id: invitationId,
+      },
+    },
+  });
+
+  if (!existing) {
+    throw new HttpError(404, 'Invitation was not found.');
+  }
+
+  if (existing.status !== 'pending' || existing.acceptedAt || existing.revokedAt) {
+    throw new HttpError(409, 'Only pending invitations can be resent.');
+  }
+
   const invitation = await tx.userInvitation.update({
     where: {
       tenantId_id: {
@@ -342,28 +386,14 @@ export async function resendInvitation(
     metadata: { email: invitation.email },
   });
 
-  return mapInvitation(invitation);
+  return mapInvitation(invitation, await loadInvitationRoleMap(tx, actor.tenantId, [invitation]));
 }
 
 export async function acceptInvitation(
   tx: RbacTransactionClient,
-  input: AcceptInvitationInput,
+  input: InvitationAcceptanceInput,
 ) {
-  const invitation = await tx.userInvitation.findUnique({
-    where: {
-      tokenHash: hashSecret(input.token, 'invitation'),
-    },
-  });
-
-  if (
-    !invitation ||
-    invitation.status !== 'pending' ||
-    invitation.revokedAt ||
-    invitation.acceptedAt ||
-    invitation.expiresAt <= new Date()
-  ) {
-    throw new HttpError(400, 'Invitation is invalid or expired.');
-  }
+  const invitation = await resolveAcceptableInvitation(tx, input);
 
   const roleIds = readRoleIdsFromJson(invitation.targetRoles);
   await assertRoleIdsBelongToTenant(tx, invitation.tenantId, roleIds);
@@ -422,7 +452,12 @@ export async function acceptInvitation(
   }
 
   await tx.userInvitation.update({
-    where: { id: invitation.id },
+    where: {
+      tenantId_id: {
+        tenantId: invitation.tenantId,
+        id: invitation.id,
+      },
+    },
     data: {
       status: 'accepted',
       acceptedAt: new Date(),
@@ -437,7 +472,37 @@ export async function acceptInvitation(
     metadata: { email: invitation.email, resultingUserId: user.id },
   });
 
-  return { ok: true };
+  return { ok: true as const };
+}
+
+export async function readInvitationOnboarding(
+  tx: RbacTransactionClient,
+  input: { token?: string; challengeToken?: string },
+) {
+  const invitation = await resolveAcceptableInvitation(tx, input);
+
+  return mapInvitationOnboarding(invitation);
+}
+
+export async function readPendingInvitationOnboardingByEmail(
+  tx: RbacTransactionClient,
+  email: string,
+  tenantId?: string,
+) {
+  const invitation = await tx.userInvitation.findFirst({
+    where: {
+      normalizedEmail: email.toLowerCase(),
+      status: 'pending',
+      acceptedAt: null,
+      revokedAt: null,
+      expiresAt: { gt: new Date() },
+      ...(tenantId ? { tenantId } : {}),
+    },
+    orderBy: { createdAt: 'desc' },
+    include: invitationInclude,
+  });
+
+  return invitation ? mapInvitationOnboarding(invitation) : null;
 }
 
 export async function listRoles(tx: RbacTransactionClient, tenantId: string) {
@@ -902,14 +967,27 @@ function mapPermission(permission: {
   };
 }
 
-function mapInvitation(invitation: Prisma.UserInvitationGetPayload<{ include: typeof invitationInclude }>) {
+function mapInvitation(
+  invitation: Prisma.UserInvitationGetPayload<{ include: typeof invitationInclude }>,
+  roleMap: Map<string, InvitationRoleSummary> = new Map(),
+) {
+  const now = new Date();
+  const expired = invitation.expiresAt <= now;
+  const pending = invitation.status === 'pending' && !invitation.acceptedAt && !invitation.revokedAt;
+  const targetRoles = readRoleIdsFromJson(invitation.targetRoles).map((roleId) => roleMap.get(roleId) ?? {
+    id: roleId,
+    name: roleId,
+    description: null,
+    isSystem: false,
+  });
+
   return {
     id: invitation.id,
     tenantId: invitation.tenantId,
     email: invitation.email,
     displayName: invitation.displayName,
     status: invitation.status,
-    targetRoles: readRoleIdsFromJson(invitation.targetRoles),
+    targetRoles,
     expiresAt: invitation.expiresAt.toISOString(),
     acceptedAt: toIso(invitation.acceptedAt),
     revokedAt: toIso(invitation.revokedAt),
@@ -918,6 +996,10 @@ function mapInvitation(invitation: Prisma.UserInvitationGetPayload<{ include: ty
     updatedAt: invitation.updatedAt.toISOString(),
     inviter: invitation.inviter,
     resultingUser: invitation.resultingUser,
+    isExpired: expired,
+    onboardingEligible: pending && !expired,
+    canResend: pending,
+    canRevoke: pending,
   };
 }
 
@@ -1061,6 +1143,126 @@ function sanitizeMetadata(value: unknown): Prisma.InputJsonValue {
 
 function readRoleIdsFromJson(value: Prisma.JsonValue): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+}
+
+type InvitationRecord = Prisma.UserInvitationGetPayload<{ include: typeof invitationInclude }>;
+type InvitationRoleSummary = {
+  id: string;
+  name: string;
+  description: string | null;
+  isSystem: boolean;
+};
+
+async function loadInvitationRoleMap(
+  tx: RbacTransactionClient,
+  tenantId: string,
+  invitations: readonly { targetRoles: Prisma.JsonValue }[],
+): Promise<Map<string, InvitationRoleSummary>> {
+  const roleIds = Array.from(new Set(invitations.flatMap((invitation) => readRoleIdsFromJson(invitation.targetRoles))));
+
+  if (roleIds.length === 0) {
+    return new Map();
+  }
+
+  const roles = await tx.role.findMany({
+    where: {
+      tenantId,
+      id: { in: roleIds },
+    },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      isSystem: true,
+    },
+  });
+
+  return new Map(roles.map((role) => [role.id, role]));
+}
+
+async function resolveAcceptableInvitation(
+  tx: RbacTransactionClient,
+  input: { token?: string; challengeToken?: string },
+): Promise<InvitationRecord> {
+  const invitation = input.token
+    ? await tx.userInvitation.findUnique({
+        where: {
+          tokenHash: hashSecret(input.token, 'invitation'),
+        },
+        include: invitationInclude,
+      })
+    : await findInvitationByChallenge(tx, input.challengeToken);
+
+  if (
+    !invitation ||
+    invitation.status !== 'pending' ||
+    invitation.revokedAt ||
+    invitation.acceptedAt ||
+    invitation.expiresAt <= new Date()
+  ) {
+    throw new HttpError(400, 'auth.error.invitationInvalid');
+  }
+
+  return invitation;
+}
+
+async function findInvitationByChallenge(
+  tx: RbacTransactionClient,
+  challengeToken: string | undefined,
+): Promise<InvitationRecord | null> {
+  if (!challengeToken) {
+    throw new HttpError(400, 'auth.error.invitationChallengeInvalid');
+  }
+
+  try {
+    const payload = verifyChallenge<{
+      purpose?: unknown;
+      invitationId?: unknown;
+      tenantId?: unknown;
+      email?: unknown;
+    }>(challengeToken);
+
+    if (
+      payload.purpose !== INVITATION_CHALLENGE_PURPOSE ||
+      typeof payload.invitationId !== 'string' ||
+      typeof payload.tenantId !== 'string' ||
+      typeof payload.email !== 'string'
+    ) {
+      throw new Error('Invalid invitation challenge.');
+    }
+
+    const invitation = await tx.userInvitation.findUnique({
+      where: {
+        tenantId_id: {
+          tenantId: payload.tenantId,
+          id: payload.invitationId,
+        },
+      },
+      include: invitationInclude,
+    });
+
+    return invitation?.normalizedEmail === payload.email ? invitation : null;
+  } catch {
+    throw new HttpError(400, 'auth.error.invitationChallengeInvalid');
+  }
+}
+
+function mapInvitationOnboarding(invitation: InvitationRecord) {
+  return {
+    status: 'onboardingRequired' as const,
+    challengeToken: signChallenge({
+      purpose: INVITATION_CHALLENGE_PURPOSE,
+      invitationId: invitation.id,
+      tenantId: invitation.tenantId,
+      email: invitation.normalizedEmail,
+      expiresAt: minutesFromNow(INVITATION_CHALLENGE_TTL_MINUTES).toISOString(),
+    }),
+    invitation: {
+      email: invitation.email,
+      displayName: invitation.displayName,
+      expiresAt: invitation.expiresAt.toISOString(),
+    },
+  };
 }
 
 function createNumericOtp(digits: number): string {

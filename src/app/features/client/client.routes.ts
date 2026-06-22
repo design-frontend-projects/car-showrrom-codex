@@ -47,5 +47,10 @@ export const clientRoutes: Routes = [
     path: 'sign-in',
     loadComponent: () => import('./sign-in-page').then((m) => m.SignInPage),
     data: { animation: 'sign-in' }
+  },
+  {
+    path: 'onboarding',
+    loadComponent: () => import('./invitation-onboarding-page').then((m) => m.InvitationOnboardingPage),
+    data: { animation: 'invitation-onboarding' }
   }
 ];

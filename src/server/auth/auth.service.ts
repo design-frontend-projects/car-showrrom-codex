@@ -1,5 +1,10 @@
 import type { Request } from 'express';
 import type { Role, User } from '../../generated/prisma/client';
+import {
+  acceptInvitation,
+  readInvitationOnboarding,
+  readPendingInvitationOnboardingByEmail,
+} from '../admin-rbac/admin-rbac.repository';
 import { ensureDefaultRbacRoles } from '../rbac/default-roles';
 import { authConfig } from './auth.config';
 import { decryptText, encryptText, hashSecret, randomToken, signChallenge, verifyChallenge } from './auth.crypto';
@@ -7,6 +12,8 @@ import { withAuthDatabaseContext, type AuthTransactionClient } from './auth.db';
 import { AuthHttpError } from './auth.errors';
 import {
   LoginInput,
+  InvitationOnboardingAcceptInput,
+  InvitationOnboardingLookupInput,
   RegisterInput,
   ResetCompleteInput,
   ResetRequestInput,
@@ -92,6 +99,16 @@ export interface TwoFactorRequiredDto {
   user: Pick<AuthUserDto, 'email' | 'displayName' | 'twoFactorRequired'>;
 }
 
+export interface OnboardingRequiredDto {
+  status: 'onboardingRequired';
+  challengeToken: string;
+  invitation: {
+    email: string;
+    displayName: string | null;
+    expiresAt: string;
+  };
+}
+
 export interface CreatedSession {
   dto: AuthSessionDto;
   sessionToken: string;
@@ -168,11 +185,22 @@ export async function registerUser(input: RegisterInput, metadata: RequestMetada
   });
 }
 
-export async function loginUser(input: LoginInput, metadata: RequestMetadata): Promise<CreatedSession | TwoFactorRequiredDto> {
+export async function loginUser(
+  input: LoginInput,
+  metadata: RequestMetadata,
+): Promise<CreatedSession | TwoFactorRequiredDto | OnboardingRequiredDto> {
   return withAuthDatabaseContext(async (tx) => {
     const user = await findLoginUser(tx, input.email, input.tenantId);
 
     if (!user || !user.isActive || isLocked(user)) {
+      const onboarding = !user
+        ? await readPendingInvitationOnboardingByEmail(tx, input.email, input.tenantId)
+        : null;
+
+      if (onboarding) {
+        return onboarding;
+      }
+
       throw new AuthHttpError(401, 'auth.error.invalidCredentials');
     }
 
@@ -202,6 +230,38 @@ export async function loginUser(input: LoginInput, metadata: RequestMetadata): P
     });
 
     return createSession(tx, sessionUser, metadata, Boolean(input.remember));
+  });
+}
+
+export async function lookupInvitationOnboarding(
+  input: InvitationOnboardingLookupInput,
+): Promise<OnboardingRequiredDto> {
+  return withAuthDatabaseContext(async (tx) => {
+    try {
+      return await readInvitationOnboarding(tx, input);
+    } catch {
+      throw new AuthHttpError(400, 'auth.error.invitationInvalid');
+    }
+  });
+}
+
+export async function completeInvitationOnboarding(
+  input: InvitationOnboardingAcceptInput,
+): Promise<{ ok: true }> {
+  return withAuthDatabaseContext(async (tx) => {
+    try {
+      return await acceptInvitation(tx, input);
+    } catch (error) {
+      if (error instanceof AuthHttpError) {
+        throw error;
+      }
+
+      if (error instanceof Error && error.message.startsWith('auth.')) {
+        throw new AuthHttpError(400, error.message);
+      }
+
+      throw new AuthHttpError(400, 'auth.error.invitationInvalid');
+    }
   });
 }
 

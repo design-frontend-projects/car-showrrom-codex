@@ -14,12 +14,12 @@
 
 ## 3. Tests
 
-- [ ] 3.1 Add or update Angular tests for condition option initialization, disabled submission without a valid condition, and condition field error display.
-- [ ] 3.2 Add or update server tests for listing creation/update persisting `conditionId` and rejecting condition codes without an active catalog match.
+- [x] 3.1 Add or update Angular tests for condition option initialization, disabled submission without a valid condition, and condition field error display.
+- [x] 3.2 Add or update server tests for listing creation/update persisting `conditionId` and rejecting condition codes without an active catalog match.
 
 ## 4. Verification
 
-- [ ] 4.1 Run `pnpm run prisma:validate`.
-- [ ] 4.2 Run `pnpm run prisma:generate` if Prisma schema or migrations changed generated types.
-- [ ] 4.3 Run targeted client/server tests for this change.
-- [ ] 4.4 Run `pnpm run build:prod`.
+- [x] 4.1 Run `pnpm run prisma:validate`.
+- [x] 4.2 Run `pnpm run prisma:generate` if Prisma schema or migrations changed generated types.
+- [x] 4.3 Run targeted client/server tests for this change.
+- [x] 4.4 Run `pnpm run build:prod`.

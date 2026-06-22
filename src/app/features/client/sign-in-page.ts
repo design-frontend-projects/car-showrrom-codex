@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { email, minLength, pattern, required, schema } from '@angular/forms/signals';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -55,6 +55,10 @@ const resetSchema = schema<ResetModel>((path) => {
 
       @if (auth.error(); as error) {
         <p class="form-error">{{ error | translate }}</p>
+      }
+
+      @if (onboardingSuccess()) {
+        <p class="form-success">{{ 'auth.onboarding.success' | translate }}</p>
       }
 
       @if (step() === 'login') {
@@ -187,6 +191,11 @@ const resetSchema = schema<ResetModel>((path) => {
         font-weight: 800;
       }
 
+      .form-success {
+        color: var(--success, #166534);
+        font-weight: 800;
+      }
+
       .link-button {
         border: 0;
         background: transparent;
@@ -207,10 +216,12 @@ const resetSchema = schema<ResetModel>((path) => {
 export class SignInPage {
   readonly auth = inject(AuthFacade);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   readonly step = signal<'login' | '2fa' | 'reset-request' | 'reset-verify' | 'reset-complete'>('login');
   readonly setupQrCode = signal<string | null>(null);
   readonly demoOtp = signal<string | null>(null);
   readonly resetToken = signal<string | null>(null);
+  readonly onboardingSuccess = signal(this.route.snapshot.queryParamMap.get('onboarding') === 'success');
 
   readonly loginForm = createSignalForm<LoginModel>({ email: '', password: '', remember: false }, loginSchema);
   readonly loginModel = this.loginForm.model;
@@ -269,6 +280,17 @@ export class SignInPage {
 
     if (this.auth.requiresTwoFactor()) {
       this.step.set('2fa');
+      return;
+    }
+
+    if (this.auth.requiresOnboarding()) {
+      const onboarding = this.auth.onboarding();
+
+      if (onboarding) {
+        await this.router.navigate(['/client/onboarding'], {
+          queryParams: { challenge: onboarding.challengeToken },
+        });
+      }
       return;
     }
 

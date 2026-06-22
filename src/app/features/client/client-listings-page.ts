@@ -41,7 +41,7 @@ import { formatCurrency, formatMileage } from '../../utils/number-format.util';
           <p-select [options]="makes()" optionLabel="name" optionValue="id" name="makeId" required [(ngModel)]="draft.makeId" [placeholder]="'showroom.search.make' | translate" (onChange)="onMakeChange()" />
           <p-select [options]="models()" optionLabel="name" optionValue="id" name="modelId" required [(ngModel)]="draft.modelId" [placeholder]="'showroom.search.model' | translate" (onChange)="onModelChange()" />
           <p-select [options]="variants()" optionLabel="name" optionValue="id" name="variantId" required [(ngModel)]="draft.variantId" [placeholder]="'showroom.search.variant' | translate" />
-          <p-select [options]="conditions()" optionLabel="name" optionValue="code" name="condition" required [(ngModel)]="draft.condition" [placeholder]="'showroom.search.condition' | translate" />
+          <p-select [options]="conditions()" optionLabel="name" optionValue="code" name="condition" required [(ngModel)]="draft.condition" [placeholder]="'showroom.search.condition' | translate" (onChange)="onConditionChange()" />
           <input pInputText type="number" name="modelYear" required [(ngModel)]="draft.modelYear" [placeholder]="'showroom.fields.year' | translate" />
           <input pInputText type="number" name="price" required [(ngModel)]="draft.price" [placeholder]="'showroom.fields.price' | translate" />
           <input pInputText type="number" name="mileage" required [(ngModel)]="draft.mileage" [placeholder]="'showroom.fields.mileage' | translate" />
@@ -117,7 +117,7 @@ export class ClientListingsPage implements OnInit {
   readonly price = formatCurrency;
   readonly mileage = formatMileage;
 
-  readonly draft: ListingInputDto = {
+  readonly draft: ListingDraft = {
     makeId: '',
     modelId: '',
     variantId: '',
@@ -126,7 +126,7 @@ export class ClientListingsPage implements OnInit {
     price: 0,
     currency: 'USD',
     mileage: 0,
-    condition: 'USED',
+    condition: '',
     location: '',
     description: '',
     status: 'DRAFT',
@@ -139,6 +139,7 @@ export class ClientListingsPage implements OnInit {
         this.draft.modelId &&
         this.draft.variantId &&
         this.draft.price > 0 &&
+        this.hasValidCondition() &&
         this.draft.description.length >= 20,
     );
   }
@@ -152,8 +153,15 @@ export class ClientListingsPage implements OnInit {
     this.fieldErrors.set({});
     this.fieldErrorList.set([]);
 
+    if (!this.hasValidCondition()) {
+      this.fieldErrors.set({ condition: 'showroom.validation.required' });
+      this.fieldErrorList.set(['showroom.validation.required']);
+      this.formError.set('showroom.error.validation');
+      return;
+    }
+
     try {
-      await firstValueFrom(this.listingApi.create(this.draft));
+      await firstValueFrom(this.listingApi.create(this.toListingInput()));
       Object.assign(this.draft, {
         makeId: '',
         modelId: '',
@@ -182,6 +190,14 @@ export class ClientListingsPage implements OnInit {
     this.draft.variantId = '';
     this.variants.set([]);
     void this.loadVariants();
+  }
+
+  onConditionChange(): void {
+    if (this.hasValidCondition()) {
+      this.clearConditionError();
+    } else {
+      this.setConditionRequiredError();
+    }
   }
 
   async changeStatus(listing: ListingSummaryDto, status: CarListingStatus): Promise<void> {
@@ -217,12 +233,17 @@ export class ClientListingsPage implements OnInit {
   }
 
   private async loadOptions(): Promise<void> {
-    const [makes, conditions] = await Promise.all([
+    const [makes, conditions] = await Promise.allSettled([
       firstValueFrom(this.catalog.options<ShowroomMake>('makes', { limit: 100 })),
       firstValueFrom(this.catalog.options<VehicleDefinitionCatalogItem>('conditions', { limit: 20 })),
     ]);
-    this.makes.set(makes.items);
-    this.conditions.set(conditions.items);
+
+    if (makes.status === 'fulfilled') {
+      this.makes.set(makes.value.items);
+    }
+
+    this.conditions.set(conditions.status === 'fulfilled' ? conditions.value.items : []);
+    this.selectPreferredCondition();
   }
 
   private async loadModels(): Promise<void> {
@@ -291,4 +312,65 @@ export class ClientListingsPage implements OnInit {
       this.fieldErrorList.set(Object.values(fieldErrors));
     }
   }
+
+  private selectPreferredCondition(): void {
+    const validConditionCodes = this.validConditionCodes();
+
+    if (this.draft.condition && validConditionCodes.has(this.draft.condition)) {
+      this.clearConditionError();
+      return;
+    }
+
+    const firstConditionCode = validConditionCodes.values().next().value;
+    this.draft.condition = validConditionCodes.has('USED') ? 'USED' : (firstConditionCode ?? '');
+
+    if (this.draft.condition) {
+      this.clearConditionError();
+    } else {
+      this.setConditionRequiredError();
+    }
+  }
+
+  private hasValidCondition(): boolean {
+    return this.isConditionCode(this.draft.condition) && this.validConditionCodes().has(this.draft.condition);
+  }
+
+  private validConditionCodes(): Set<CarListingCondition> {
+    const codes = new Set<CarListingCondition>();
+
+    for (const condition of this.conditions()) {
+      if (condition.isActive && this.isConditionCode(condition.code)) {
+        codes.add(condition.code);
+      }
+    }
+
+    return codes;
+  }
+
+  private isConditionCode(value: string | null | undefined): value is CarListingCondition {
+    return value === 'NEW' || value === 'CERTIFIED_PRE_OWNED' || value === 'USED' || value === 'DAMAGED';
+  }
+
+  private clearConditionError(): void {
+    const { condition, ...remaining } = this.fieldErrors();
+    void condition;
+    this.fieldErrors.set(remaining);
+    this.fieldErrorList.set(Object.values(remaining));
+  }
+
+  private setConditionRequiredError(): void {
+    this.fieldErrors.set({ ...this.fieldErrors(), condition: 'showroom.validation.required' });
+    this.fieldErrorList.set(Object.values(this.fieldErrors()));
+  }
+
+  private toListingInput(): ListingInputDto {
+    return {
+      ...this.draft,
+      condition: this.draft.condition as CarListingCondition,
+    };
+  }
 }
+
+type ListingDraft = Omit<ListingInputDto, 'condition'> & {
+  condition: CarListingCondition | '';
+};

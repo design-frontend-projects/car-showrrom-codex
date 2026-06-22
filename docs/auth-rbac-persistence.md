@@ -6,6 +6,18 @@ Angular auth state is centralized in `AuthSignalStore`. The store owns the sanit
 
 Components and guards should use `AuthFacade` instead of parsing roles directly. Admin navigation and route guards use `canAccessAdmin`, which grants access for normalized `admin` and `system-owner` roles or the `showroom.admin.manage` permission.
 
+## Invitation Onboarding Contract
+
+Invitation onboarding uses the existing Prisma models without new tables:
+
+- `UserInvitation`: `tenantId`, `email`, `normalizedEmail`, `displayName`, `tokenHash`, `targetRoles`, `status`, `expiresAt`, `acceptedAt`, `revokedAt`, `resentAt`, `inviterUserId`, `resultingUserId`, `createdAt`, and `updatedAt`.
+- `User`: `tenantId`, `email`, `displayName`, `passwordHash`, optional `phone`, `isActive`, `passwordChangedAt`, and existing auth lifecycle fields that must be preserved unless the onboarding payload changes them.
+- `Role`: `tenantId`, `id`, `name`, `description`, and `isSystem`, used to revalidate invitation target role IDs before acceptance.
+- `UserRole`: `tenantId`, `userId`, `roleId`, and `assignedAt`, upserted through the tenant-aware uniqueness key.
+- `RbacAuditEvent`: `tenantId`, optional `actorUserId`, `action`, `targetType`, `targetId`, sanitized `metadata`, and `createdAt`.
+
+The canonical admin invitation API is `/api/admin/rbac/invitations` for listing, creation, resend, and revoke. The canonical unauthenticated onboarding API is `/api/auth/invitations/lookup` and `/api/auth/invitations/accept`; the old public acceptance path under the admin RBAC router is not used. Admin invitation DTOs expose safe status, timestamp, role, inviter, resulting-user, and action-eligibility fields, and never expose token hashes, raw invitation tokens, password hashes, OTPs, TOTP secrets, backup codes, session tokens, or CSRF hashes.
+
 ## Browser Storage
 
 `AuthPersistenceService` persists only sanitized authenticated session state. The default storage mode is `sessionStorage`; `localStorage` is available only by explicitly setting `environment.auth.stateStorage` to `localStorage`.

@@ -60,6 +60,16 @@
       "complete": "Set new password",
       "demoOtp": "Demo OTP: {{ code }}"
     },
+    "onboarding": {
+      "kicker": "Invitation onboarding",
+      "title": "Set up your invited account",
+      "copy": "Confirm your invited identity and choose a password before signing in.",
+      "loading": "Validating invitation",
+      "confirmPassword": "Confirm password",
+      "submit": "Set password",
+      "cancel": "Cancel setup",
+      "success": "Your password is set. Sign in with your invited email."
+    },
     "twoFactor": {
       "eyebrow": "Account security",
       "title": "Two-factor verification",
@@ -92,7 +102,11 @@
         "uppercase": "Include an uppercase letter.",
         "number": "Include a number.",
         "symbol": "Include a symbol.",
-        "policy": "Use uppercase, lowercase, number, and symbol characters."
+        "policy": "Use uppercase, lowercase, number, and symbol characters.",
+        "confirm": "Passwords must match."
+      },
+      "phone": {
+        "format": "Enter a valid phone number or leave it blank."
       },
       "otp": {
         "format": "Enter the numeric code from your authenticator or reset message."
@@ -117,7 +131,9 @@
       "userNotFound": "User was not found.",
       "twoFactorMismatch": "The two-factor code does not match.",
       "twoFactorChallengeInvalid": "The two-factor challenge expired. Sign in again.",
-      "twoFactorSetupMissing": "Start two-factor setup before verifying."
+      "twoFactorSetupMissing": "Start two-factor setup before verifying.",
+      "invitationInvalid": "The invitation is invalid, expired, accepted, or revoked.",
+      "invitationChallengeInvalid": "The onboarding challenge expired. Open the invitation again."
     }
   },
   "catalog": {
@@ -414,7 +430,10 @@
     "invitations": {
       "title": "Pending invitations",
       "copy": "Review invitation lifecycle state without exposing invitation tokens or token hashes.",
-      "empty": "No invitations have been created."
+      "empty": "No invitations match this view.",
+      "filter": "Invitation status filter",
+      "search": "Search invitations",
+      "loading": "Loading invitations"
     },
     "roles": {
       "title": "Role management",
@@ -455,6 +474,8 @@
       "next": "Next",
       "previous": "Previous",
       "reset": "Reset",
+      "resend": "Resend",
+      "revoke": "Revoke",
       "safeFallback": "Return home",
       "save": "Save",
       "sendInvite": "Send invitation"
@@ -467,7 +488,9 @@
       "displayName": "Display name",
       "email": "Email",
       "expiresAt": "Expires",
+      "acceptedAt": "Accepted",
       "initialPassword": "Initial password",
+      "inviter": "Inviter",
       "lastLogin": "Last login",
       "metadata": "Metadata",
       "name": "Name",
@@ -475,9 +498,13 @@
       "permissions": "Permissions",
       "role": "Role",
       "roles": "Roles",
+      "resultingUser": "Resulting user",
+      "resentAt": "Resent",
+      "revokedAt": "Revoked",
       "status": "Status",
       "target": "Target",
       "timestamp": "Timestamp",
+      "timestamps": "Timestamps",
       "updatedAt": "Updated",
       "user": "User",
       "phone": "Phone"
@@ -487,11 +514,27 @@
       "all": "All",
       "disabled": "Disabled"
     },
+    "invitationStatus": {
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "revoked": "Revoked",
+      "expired": "Expired"
+    },
     "states": {
       "loading": "Loading RBAC data"
     },
     "fallback": {
-      "never": "Never"
+      "never": "Never",
+      "noRoles": "No roles",
+      "system": "System",
+      "notAccepted": "Not accepted"
+    },
+    "dialogs": {
+      "disableUser": "Disable this user and revoke active sessions?",
+      "resetUser": "Create a password reset challenge for this user?",
+      "revokeInvitation": "Revoke this invitation?",
+      "resendInvitation": "Resend this invitation and refresh its expiration?",
+      "deleteRole": "Delete this role?"
     },
     "errors": {
       "forbidden": "You do not have permission to manage tenant RBAC.",

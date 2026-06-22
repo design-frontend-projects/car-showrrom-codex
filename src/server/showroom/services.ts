@@ -604,6 +604,7 @@ async function createListingForActor(
   options: { enforceActiveLimit: boolean },
 ): Promise<unknown> {
   await assertTaxonomyHierarchy(tx, context.tenantId, input.makeId, input.modelId, input.variantId);
+  const conditionId = await resolveListingConditionId(tx, context.tenantId, input.condition);
   const colorSelection = await resolveListingColorSelection(tx, context.tenantId, {
     exteriorColorId: input.exteriorColorId ?? null,
     interiorColorId: input.interiorColorId ?? null,
@@ -634,6 +635,7 @@ async function createListingForActor(
       currency: input.currency,
       mileage: input.mileage,
       condition: input.condition,
+      conditionId,
       exteriorColorName: colorSelection.exteriorColorName ?? input.exteriorColorName ?? null,
       interiorColorName: colorSelection.interiorColorName ?? input.interiorColorName ?? null,
       location: input.location,
@@ -661,6 +663,9 @@ export async function updateListing(
   const variantId = input.variantId ?? existing.variantId;
 
   await assertTaxonomyHierarchy(tx, context.tenantId, makeId, modelId, variantId);
+  const conditionId = input.condition
+    ? await resolveListingConditionId(tx, context.tenantId, input.condition)
+    : undefined;
   const colorSelection = await resolveListingColorSelection(tx, context.tenantId, {
     exteriorColorId: input.exteriorColorId,
     interiorColorId: input.interiorColorId,
@@ -695,6 +700,7 @@ export async function updateListing(
       currency: input.currency,
       mileage: input.mileage,
       condition: input.condition,
+      conditionId,
       exteriorColorName:
         colorSelection.exteriorColorName !== undefined
           ? colorSelection.exteriorColorName
@@ -1813,6 +1819,31 @@ async function resolveListingColorSelection(
         ? undefined
         : interiorColor?.name ?? null,
   };
+}
+
+async function resolveListingConditionId(
+  tx: ShowroomTx,
+  tenantId: string,
+  condition: CarListingCondition,
+): Promise<string> {
+  const catalogCondition = await tx.vehicleCondition.findFirst({
+    where: {
+      tenantId,
+      code: condition,
+      isActive: true,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!catalogCondition) {
+    throw new ShowroomHttpError(400, 'showroom.error.validation', {
+      condition: 'showroom.validation.invalid_value',
+    });
+  }
+
+  return catalogCondition.id;
 }
 
 async function assertActiveListingLimit(

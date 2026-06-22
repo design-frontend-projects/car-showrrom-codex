@@ -1,4 +1,4 @@
-export type AuthStatus = 'anonymous' | 'pending' | 'authenticated' | 'twoFactorRequired' | 'failed';
+export type AuthStatus = 'anonymous' | 'pending' | 'authenticated' | 'twoFactorRequired' | 'onboardingRequired' | 'failed';
 
 export interface AuthUser {
   id: string;
@@ -64,7 +64,17 @@ export interface TwoFactorChallenge {
   };
 }
 
-export type AuthResponse = AuthSession | AnonymousSession | TwoFactorChallenge;
+export interface OnboardingChallenge {
+  status: 'onboardingRequired';
+  challengeToken: string;
+  invitation: {
+    email: string;
+    displayName: string | null;
+    expiresAt: string;
+  };
+}
+
+export type AuthResponse = AuthSession | AnonymousSession | TwoFactorChallenge | OnboardingChallenge;
 
 export interface LoginRequest {
   email: string;
@@ -99,6 +109,19 @@ export interface ResetCompleteRequest {
   password: string;
 }
 
+export interface InvitationOnboardingLookupRequest {
+  token?: string;
+  challengeToken?: string;
+}
+
+export interface InvitationOnboardingAcceptRequest {
+  token?: string;
+  challengeToken?: string;
+  displayName: string;
+  phone?: string | null;
+  password: string;
+}
+
 export interface TwoFactorEnableRequest {
   challengeToken?: string;
 }
@@ -128,6 +151,7 @@ export interface AuthState {
   status: AuthStatus;
   session: AuthSession | null;
   challenge: TwoFactorChallenge | null;
+  onboarding: OnboardingChallenge | null;
   error: string | null;
   fieldErrors: Record<string, string>;
   csrfToken: string | null;

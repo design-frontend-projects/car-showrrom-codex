@@ -9,7 +9,10 @@ import {
   AuthSession,
   AuthState,
   BackupCodesResponse,
+  InvitationOnboardingAcceptRequest,
+  InvitationOnboardingLookupRequest,
   LoginRequest,
+  OnboardingChallenge,
   RegisterRequest,
   ResetCompleteRequest,
   ResetRequest,
@@ -24,6 +27,7 @@ const initialAuthState: AuthState = {
   status: 'anonymous',
   session: null,
   challenge: null,
+  onboarding: null,
   error: null,
   fieldErrors: {},
   csrfToken: null,
@@ -34,7 +38,7 @@ const initialAuthState: AuthState = {
 export const AuthSignalStore = signalStore(
   { providedIn: 'root' },
   withState(initialAuthState),
-  withComputed(({ session, status, challenge }) => ({
+  withComputed(({ session, status, challenge, onboarding }) => ({
     user: computed(() => session()?.user ?? null),
     normalizedRoles: computed(() => normalizeRoles(session()?.user.roles ?? [])),
     isAdmin: computed(() => normalizeRoles(session()?.user.roles ?? []).includes('admin')),
@@ -47,6 +51,7 @@ export const AuthSignalStore = signalStore(
     }),
     isAuthenticated: computed(() => status() === 'authenticated'),
     requiresTwoFactor: computed(() => status() === 'twoFactorRequired' && challenge() !== null),
+    requiresOnboarding: computed(() => status() === 'onboardingRequired' && onboarding() !== null),
   })),
   withMethods((store, api = inject(AuthApiService), tenantContext = inject(TenantContextService), persistence = inject(AuthPersistenceService)) => ({
     async loadSession(): Promise<void> {
@@ -179,6 +184,51 @@ export const AuthSignalStore = signalStore(
       return firstValueFrom(api.resetComplete(request));
     },
 
+    async lookupInvitationOnboarding(request: InvitationOnboardingLookupRequest): Promise<OnboardingChallenge | null> {
+      patchState(store, { status: 'pending', onboarding: null, error: null, fieldErrors: {} });
+
+      try {
+        const onboarding = await firstValueFrom(api.lookupInvitationOnboarding(request));
+        patchState(store, {
+          status: 'onboardingRequired',
+          session: null,
+          challenge: null,
+          onboarding,
+          error: null,
+          fieldErrors: {},
+        });
+        tenantContext.clearSelectedTenantId();
+        persistence.clear();
+        return onboarding;
+      } catch (error) {
+        applyAuthError(store, error);
+        return null;
+      }
+    },
+
+    async acceptInvitationOnboarding(request: InvitationOnboardingAcceptRequest): Promise<boolean> {
+      patchState(store, { status: 'pending', error: null, fieldErrors: {} });
+
+      try {
+        await firstValueFrom(api.acceptInvitationOnboarding(request));
+        this.clearOnboarding();
+        return true;
+      } catch (error) {
+        applyAuthError(store, error, 'onboardingRequired');
+        return false;
+      }
+    },
+
+    clearOnboarding(): void {
+      patchState(store, {
+        status: store.session() ? 'authenticated' : 'anonymous',
+        onboarding: null,
+        challenge: null,
+        error: null,
+        fieldErrors: {},
+      });
+    },
+
     async logoutLocal(): Promise<void> {
       try {
         await firstValueFrom(api.logout());
@@ -226,6 +276,20 @@ function applyAuthResponse(
       error: null,
       fieldErrors: {},
     });
+    persistence.clear();
+    return;
+  }
+
+  if (response.status === 'onboardingRequired') {
+    patchState(store, {
+      status: 'onboardingRequired',
+      session: null,
+      challenge: null,
+      onboarding: response,
+      error: null,
+      fieldErrors: {},
+    });
+    tenantContext.clearSelectedTenantId();
     persistence.clear();
     return;
   }

@@ -69,7 +69,7 @@ export interface RbacInvitation {
   email: string;
   displayName?: string | null;
   status: 'pending' | 'accepted' | 'revoked' | string;
-  targetRoles: readonly string[];
+  targetRoles: readonly RbacRoleSummary[];
   expiresAt: string;
   acceptedAt?: string | null;
   revokedAt?: string | null;
@@ -78,6 +78,10 @@ export interface RbacInvitation {
   updatedAt: string;
   inviter?: SafeUserRef | null;
   resultingUser?: SafeUserRef | null;
+  isExpired: boolean;
+  onboardingEligible: boolean;
+  canResend: boolean;
+  canRevoke: boolean;
 }
 
 export interface SafeUserRef {

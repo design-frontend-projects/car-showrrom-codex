@@ -21,11 +21,47 @@ describe('RbacSignalStore', () => {
     roles: [],
   };
 
-  let userService: { list: ReturnType<typeof vi.fn> };
+  const invitation = {
+    id: '33333333-3333-4333-8333-333333333333',
+    tenantId: user.tenantId,
+    email: 'invitee@example.com',
+    displayName: 'Invitee User',
+    status: 'pending',
+    targetRoles: [],
+    expiresAt: '2026-06-04T00:00:00.000Z',
+    acceptedAt: null,
+    revokedAt: null,
+    resentAt: null,
+    createdAt: '2026-06-02T00:00:00.000Z',
+    updatedAt: '2026-06-02T00:00:00.000Z',
+    inviter: null,
+    resultingUser: null,
+    isExpired: false,
+    onboardingEligible: true,
+    canResend: true,
+    canRevoke: true,
+  };
+
+  let userService: {
+    list: ReturnType<typeof vi.fn>;
+    listInvitations: ReturnType<typeof vi.fn>;
+    revokeInvitation: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     userService = {
       list: vi.fn(() => of([user])),
+      listInvitations: vi.fn(() => of([invitation])),
+      revokeInvitation: vi.fn(() =>
+        of({
+          ...invitation,
+          status: 'revoked',
+          revokedAt: '2026-06-03T00:00:00.000Z',
+          onboardingEligible: false,
+          canResend: false,
+          canRevoke: false,
+        }),
+      ),
     };
 
     TestBed.configureTestingModule({
@@ -46,9 +82,9 @@ describe('RbacSignalStore', () => {
             disable: vi.fn(),
             enable: vi.fn(),
             initiateReset: vi.fn(),
-            listInvitations: vi.fn(() => of([])),
+            listInvitations: userService.listInvitations,
             invite: vi.fn(),
-            revokeInvitation: vi.fn(),
+            revokeInvitation: userService.revokeInvitation,
             resendInvitation: vi.fn(),
           },
         },
@@ -91,5 +127,24 @@ describe('RbacSignalStore', () => {
     expect(store.users()).toEqual([user]);
     expect(store.usersStatus()).toBe('failed');
     expect(store.error()).toBe('rbac.errors.forbidden');
+  });
+
+  it('updates invitation mutation state without clearing loaded users', async () => {
+    const store = TestBed.inject(RbacSignalStore);
+
+    await store.loadUsers();
+    await store.loadInvitations();
+    await store.revokeInvitation(invitation.id);
+
+    expect(store.users()).toEqual([user]);
+    expect(store.invitations()[0]).toEqual(
+      expect.objectContaining({
+        id: invitation.id,
+        status: 'revoked',
+        canRevoke: false,
+      }),
+    );
+    expect(store.pendingInvitationCount()).toBe(0);
+    expect(store.mutationStatus()).toBe('idle');
   });
 });

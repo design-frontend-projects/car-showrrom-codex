@@ -6,7 +6,10 @@ import {
   AuthSession,
   BackupCodesResponse,
   CurrentProfile,
+  InvitationOnboardingAcceptRequest,
+  InvitationOnboardingLookupRequest,
   LoginRequest,
+  OnboardingChallenge,
   RegisterRequest,
   ResetCompleteRequest,
   ResetRequest,
@@ -64,6 +67,14 @@ export class AuthApiService {
 
   resetComplete(request: ResetCompleteRequest): Observable<{ ok: true }> {
     return this.api.post<{ ok: true }>('/auth/reset-complete', request);
+  }
+
+  lookupInvitationOnboarding(request: InvitationOnboardingLookupRequest): Observable<OnboardingChallenge> {
+    return this.api.post<OnboardingChallenge>('/auth/invitations/lookup', request);
+  }
+
+  acceptInvitationOnboarding(request: InvitationOnboardingAcceptRequest): Observable<{ ok: true }> {
+    return this.api.post<{ ok: true }>('/auth/invitations/accept', request);
   }
 
   enableTwoFactor(request: TwoFactorEnableRequest = {}): Observable<TwoFactorSetupResponse> {

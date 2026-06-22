@@ -46,4 +46,30 @@ describe('AuthApiService profile', () => {
 
     expect(api.get).toHaveBeenCalledWith('/auth/profile');
   });
+
+  it('uses same-origin auth endpoints for invited-user onboarding', () => {
+    const api = {
+      get: vi.fn(),
+      post: vi.fn(() => of({ ok: true })),
+    } as unknown as ApiService;
+    const service = new AuthApiService(api);
+
+    service.lookupInvitationOnboarding({ token: 'invitation-token-with-enough-entropy' }).subscribe();
+    service.acceptInvitationOnboarding({
+      challengeToken: 'challenge-token',
+      displayName: 'Invitee User',
+      phone: null,
+      password: 'Password1!',
+    }).subscribe();
+
+    expect(api.post).toHaveBeenNthCalledWith(1, '/auth/invitations/lookup', {
+      token: 'invitation-token-with-enough-entropy',
+    });
+    expect(api.post).toHaveBeenNthCalledWith(2, '/auth/invitations/accept', {
+      challengeToken: 'challenge-token',
+      displayName: 'Invitee User',
+      phone: null,
+      password: 'Password1!',
+    });
+  });
 });

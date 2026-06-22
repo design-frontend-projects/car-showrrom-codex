@@ -5,6 +5,8 @@ import {
   ResetCompleteRequest,
   ResetRequest,
   ResetVerifyRequest,
+  InvitationOnboardingAcceptRequest,
+  InvitationOnboardingLookupRequest,
   TwoFactorDisableRequest,
   TwoFactorEnableRequest,
   TwoFactorVerifyRequest,
@@ -19,10 +21,12 @@ export class AuthFacade {
   readonly user = this.store.user;
   readonly session = this.store.session;
   readonly challenge = this.store.challenge;
+  readonly onboarding = this.store.onboarding;
   readonly error = this.store.error;
   readonly fieldErrors = this.store.fieldErrors;
   readonly isAuthenticated = this.store.isAuthenticated;
   readonly requiresTwoFactor = this.store.requiresTwoFactor;
+  readonly requiresOnboarding = this.store.requiresOnboarding;
   readonly normalizedRoles = this.store.normalizedRoles;
   readonly isAdmin = this.store.isAdmin;
   readonly isSystemOwner = this.store.isSystemOwner;
@@ -74,6 +78,18 @@ export class AuthFacade {
 
   resetComplete(request: ResetCompleteRequest) {
     return this.store.resetComplete(request);
+  }
+
+  lookupInvitationOnboarding(request: InvitationOnboardingLookupRequest) {
+    return this.store.lookupInvitationOnboarding(request);
+  }
+
+  acceptInvitationOnboarding(request: InvitationOnboardingAcceptRequest) {
+    return this.store.acceptInvitationOnboarding(request);
+  }
+
+  clearOnboarding(): void {
+    this.store.clearOnboarding();
   }
 
   logoutLocal(): void {

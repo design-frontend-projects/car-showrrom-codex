@@ -39,4 +39,24 @@ describe('RBAC services', () => {
     expect(api.get).toHaveBeenNthCalledWith(2, '/admin/rbac/permissions');
     expect(api.post).toHaveBeenCalledWith('/admin/rbac/roles/role-id/permissions/permission-id', {});
   });
+
+  it('uses admin invitation endpoints without client-side secret fields', () => {
+    const api = createApiMock();
+    const service = new UserService(api);
+
+    service.listInvitations().subscribe();
+    service.invite({ email: 'invitee@example.com', roleIds: ['role-id'] }).subscribe();
+    service.resendInvitation('invitation-id').subscribe();
+    service.revokeInvitation('invitation-id').subscribe();
+
+    expect(api.get).toHaveBeenCalledWith('/admin/rbac/invitations');
+    expect(api.post).toHaveBeenNthCalledWith(1, '/admin/rbac/invitations', {
+      email: 'invitee@example.com',
+      roleIds: ['role-id'],
+    });
+    expect(api.post).toHaveBeenNthCalledWith(2, '/admin/rbac/invitations/invitation-id/resend', {});
+    expect(api.post).toHaveBeenNthCalledWith(3, '/admin/rbac/invitations/invitation-id/revoke', {});
+    expect(JSON.stringify(vi.mocked(api.post).mock.calls)).not.toContain('tokenHash');
+    expect(JSON.stringify(vi.mocked(api.post).mock.calls)).not.toContain('passwordHash');
+  });
 });

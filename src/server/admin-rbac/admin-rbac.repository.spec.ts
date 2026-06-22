@@ -174,7 +174,12 @@ describe('admin RBAC repository', () => {
       },
     });
     expect(tx.userInvitation.update).toHaveBeenCalledWith({
-      where: { id: baseInvitation().id },
+      where: {
+        tenantId_id: {
+          tenantId,
+          id: baseInvitation().id,
+        },
+      },
       data: expect.objectContaining({
         status: 'accepted',
         resultingUserId: '55555555-5555-4555-8555-555555555555',
@@ -182,9 +187,113 @@ describe('admin RBAC repository', () => {
     });
   });
 
+  it('rejects expired, revoked, or accepted invitations before writes', async () => {
+    const tx = {
+      userInvitation: {
+        findUnique: vi.fn().mockResolvedValue({
+          ...baseInvitation(),
+          status: 'revoked',
+          revokedAt: now,
+        }),
+        update: vi.fn(),
+      },
+      role: { findMany: vi.fn() },
+      user: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
+      userRole: { upsert: vi.fn() },
+      rbacAuditEvent: { create: vi.fn() },
+    } as any;
+
+    await expect(
+      acceptInvitation(tx, {
+        token: 'invitation-token-with-enough-entropy',
+        displayName: 'Invitee User',
+        password: 'Password1!',
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      message: 'auth.error.invitationInvalid',
+    });
+    expect(tx.user.create).not.toHaveBeenCalled();
+    expect(tx.userRole.upsert).not.toHaveBeenCalled();
+    expect(tx.userInvitation.update).not.toHaveBeenCalled();
+    expect(tx.rbacAuditEvent.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects stale invitation target roles without partial acceptance writes', async () => {
+    const tx = {
+      userInvitation: {
+        findUnique: vi.fn().mockResolvedValue(baseInvitation()),
+        update: vi.fn(),
+      },
+      role: { findMany: vi.fn().mockResolvedValue([]) },
+      user: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
+      userRole: { upsert: vi.fn() },
+      rbacAuditEvent: { create: vi.fn() },
+    } as any;
+
+    await expect(
+      acceptInvitation(tx, {
+        token: 'invitation-token-with-enough-entropy',
+        displayName: 'Invitee User',
+        password: 'Password1!',
+      }),
+    ).rejects.toMatchObject({
+      status: 400,
+      message: 'Every role must belong to the selected tenant.',
+    });
+    expect(tx.user.create).not.toHaveBeenCalled();
+    expect(tx.userRole.upsert).not.toHaveBeenCalled();
+    expect(tx.userInvitation.update).not.toHaveBeenCalled();
+  });
+
+  it('updates an existing same-tenant user and avoids duplicate role assignments', async () => {
+    const existingUser = baseUser('55555555-5555-4555-8555-555555555555');
+    const tx = {
+      userInvitation: {
+        findUnique: vi.fn().mockResolvedValue(baseInvitation()),
+        update: vi.fn().mockResolvedValue({}),
+      },
+      role: { findMany: vi.fn().mockResolvedValue([{ id: roleId }]) },
+      user: {
+        findUnique: vi.fn().mockResolvedValue(existingUser),
+        update: vi.fn(async ({ data }) => ({ ...existingUser, ...data })),
+        create: vi.fn(),
+      },
+      userRole: { upsert: vi.fn().mockResolvedValue({}) },
+      rbacAuditEvent: { create: vi.fn().mockResolvedValue({}) },
+    } as any;
+
+    await expect(
+      acceptInvitation(tx, {
+        token: 'invitation-token-with-enough-entropy',
+        displayName: 'Updated Invitee',
+        phone: '+15555550123',
+        password: 'Password1!',
+      }),
+    ).resolves.toEqual({ ok: true });
+
+    expect(tx.user.create).not.toHaveBeenCalled();
+    expect(tx.user.update).toHaveBeenCalledWith({
+      where: {
+        tenantId_id: {
+          tenantId,
+          id: existingUser.id,
+        },
+      },
+      data: expect.objectContaining({
+        displayName: 'Updated Invitee',
+        phone: '+15555550123',
+        isActive: true,
+        passwordChangedAt: expect.any(Date),
+      }),
+    });
+    expect(tx.userRole.upsert).toHaveBeenCalledTimes(1);
+  });
+
   it('revokes invitations with sanitized responses', async () => {
     const tx = {
       userInvitation: {
+        findUnique: vi.fn().mockResolvedValue(baseInvitation()),
         update: vi.fn().mockResolvedValue({
           ...baseInvitation(),
           status: 'revoked',
@@ -192,6 +301,7 @@ describe('admin RBAC repository', () => {
           tokenHash: 'stored-hash',
         }),
       },
+      role: { findMany: vi.fn().mockResolvedValue([{ id: roleId, name: 'manager', description: null, isSystem: false }]) },
       rbacAuditEvent: { create: vi.fn().mockResolvedValue({}) },
     } as any;
 

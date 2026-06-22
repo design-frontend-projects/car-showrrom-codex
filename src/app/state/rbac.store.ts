@@ -83,7 +83,8 @@ export const RbacSignalStore = signalStore(
   withComputed(({ users, invitations, roles, permissions, permissionGroups, auditPage, tenantStatus, usersStatus, invitationsStatus, rolesStatus, permissionsStatus, auditStatus }) => ({
     activeUsers: computed(() => users().filter((user) => user.isActive)),
     disabledUsers: computed(() => users().filter((user) => !user.isActive)),
-    pendingInvitations: computed(() => invitations().filter((invitation) => invitation.status === 'pending')),
+    pendingInvitations: computed(() => invitations().filter((invitation) => invitation.onboardingEligible)),
+    pendingInvitationCount: computed(() => invitations().filter((invitation) => invitation.onboardingEligible).length),
     roleOptions: computed(() => roles().map((role) => ({ label: role.name, value: role.id }))),
     permissionMatrix: computed(() =>
       roles().map((role) => ({

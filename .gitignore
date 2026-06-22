@@ -48,3 +48,4 @@ __screenshots__/
 Thumbs.db
 design-md/*
 .codex/*
+.agent/
