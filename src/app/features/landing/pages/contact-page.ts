@@ -37,7 +37,7 @@ import { MapLocationOverlay, MapRouteRequest, MapRouteResult, MapSelectedLocatio
           [center]="dubaiCenter"
           [zoom]="10"
           [route]="demoRoute"
-          routeColor="#0a0a0a"
+          routeColor="#da291c"
           [height]="mapHeight()"
           [showCurrentLocation]="true"
           (locationSelected)="selectedLocation.set($event)"
@@ -78,7 +78,7 @@ export class ContactPage {
       title: 'Downtown Showroom',
       subtitle: 'Sheikh Mohammed bin Rashid Blvd, Dubai',
       position: { lat: 25.1972, lng: 55.2744 },
-      iconColor: '#0a0a0a',
+      iconColor: '#da291c',
       metadata: { department: 'sales' }
     },
     {
@@ -86,7 +86,7 @@ export class ContactPage {
       title: 'Marina Delivery Hub',
       subtitle: 'Dubai Marina, Dubai',
       position: { lat: 25.0806, lng: 55.1403 },
-      iconColor: '#126f5b',
+      iconColor: '#181818',
       metadata: { department: 'delivery' }
     },
     {
@@ -94,7 +94,7 @@ export class ContactPage {
       title: 'Al Quoz Service Center',
       subtitle: 'Al Quoz Industrial Area, Dubai',
       position: { lat: 25.1436, lng: 55.2262 },
-      iconColor: '#b7791f',
+      iconColor: '#303030',
       metadata: { department: 'service' }
     }
   ];

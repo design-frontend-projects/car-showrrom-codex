@@ -99,7 +99,7 @@ import { formatCurrency, formatMileage } from '../../../utils/number-format.util
           <span>{{ 'showroom.search.priceRange' | translate }}</span>
           <strong>{{ price(priceRange[0]) }} - {{ price(priceRange[1]) }}</strong>
         </label>
-        <p-slider [(ngModel)]="priceRange" [range]="true" [min]="0" [max]="200000" [step]="5000" />
+        <p-slider [(ngModel)]="priceRange" [range]="true" [min]="0" [max]="1000000" [step]="25000" />
 
         <label class="toggle-line">
           <p-toggleswitch [(ngModel)]="activeOnly" />
@@ -181,7 +181,7 @@ export class CatalogPage implements OnInit {
   readonly title = computed(() => this.translate.instant(`pages.${this.pageKey()}.title`));
   readonly copy = computed(() => this.translate.instant(`pages.${this.pageKey()}.copy`));
   readonly filters: ListingSearchParams = {};
-  priceRange = [0, 200000];
+  priceRange = [0, 1000000];
   activeOnly = true;
 
   ngOnInit(): void {
@@ -199,7 +199,7 @@ export class CatalogPage implements OnInit {
       this.filters.maxPrice = params.get('maxPrice') ? Number(params.get('maxPrice')) : undefined;
       this.filters.page = Number(params.get('page') ?? 1);
       this.filters.sort = 'newest';
-      this.priceRange = [this.filters.minPrice ?? 0, this.filters.maxPrice ?? 200000];
+      this.priceRange = [this.filters.minPrice ?? 0, this.filters.maxPrice ?? 1000000];
       void this.loadDependentOptions();
     });
   }
@@ -224,7 +224,7 @@ export class CatalogPage implements OnInit {
       queryParams: {
         ...this.filters,
         minPrice: this.priceRange[0] > 0 ? this.priceRange[0] : null,
-        maxPrice: this.priceRange[1] < 200000 ? this.priceRange[1] : null,
+        maxPrice: this.priceRange[1] < 1000000 ? this.priceRange[1] : null,
         page: 1,
       },
       queryParamsHandling: 'merge',
@@ -235,7 +235,7 @@ export class CatalogPage implements OnInit {
     Object.keys(this.filters).forEach((key) => {
       delete this.filters[key as keyof ListingSearchParams];
     });
-    this.priceRange = [0, 200000];
+    this.priceRange = [0, 1000000];
     void this.router.navigate([], { relativeTo: this.route, queryParams: {} });
   }
 

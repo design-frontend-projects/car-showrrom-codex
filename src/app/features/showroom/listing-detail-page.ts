@@ -30,7 +30,7 @@ import { formatCurrency, formatMileage } from '../../utils/number-format.util';
             </p-carousel>
           } @else {
             <figure class="detail-media">
-              <img src="https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1400&q=80" [alt]="listing()?.title" />
+              <img src="https://images.unsplash.com/photo-1583121274602-3e2820c69888?auto=format&fit=crop&w=1400&q=80" [alt]="listing()?.title" />
             </figure>
           }
         </div>

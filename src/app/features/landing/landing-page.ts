@@ -37,11 +37,11 @@ import { formatCurrency, formatMileage } from '../../utils/number-format.util';
 
       <div class="hero-panel" aria-label="Featured vehicle">
         <span>{{ 'landing.featured' | translate }}</span>
-        <strong>2025 Mercedes-Benz CLE 300</strong>
+        <strong>2026 Ferrari SF90 Stradale</strong>
         <dl>
-          <div><dt>{{ 'landing.price' | translate }}</dt><dd>{{ price(58800) }}</dd></div>
-          <div><dt>{{ 'landing.mileage' | translate }}</dt><dd>{{ mileage(8200) }}</dd></div>
-          <div><dt>{{ 'landing.status' | translate }}</dt><dd>Certified</dd></div>
+          <div><dt>{{ 'landing.price' | translate }}</dt><dd>{{ price(524000) }}</dd></div>
+          <div><dt>{{ 'landing.mileage' | translate }}</dt><dd>{{ mileage(1200) }}</dd></div>
+          <div><dt>{{ 'landing.status' | translate }}</dt><dd>Scuderia Certified</dd></div>
         </dl>
       </div>
     </section>
