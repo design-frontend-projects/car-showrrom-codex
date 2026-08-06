@@ -30,49 +30,86 @@ const registerSchema = schema<RegisterFormModel>((path) => {
   imports: [ButtonModule, FormsModule, InputTextModule, TranslatePipe],
   template: `
     <form class="register-form" (ngSubmit)="submitForm()">
-      <label>
-        <span>{{ 'auth.displayName' | translate }}</span>
+      <div class="field">
+        <label for="displayName">{{ 'auth.displayName' | translate }}</label>
         <input
+          id="displayName"
           pInputText
           name="displayName"
           [ngModel]="model().displayName"
           (ngModelChange)="update('displayName', $event)"
           autocomplete="name"
+          placeholder="e.g. Alex Morgan"
         />
-      </label>
+      </div>
 
-      <label>
-        <span>{{ 'auth.email' | translate }}</span>
+      <div class="field">
+        <label for="reg-email">{{ 'auth.email' | translate }}</label>
         <input
+          id="reg-email"
           pInputText
           name="email"
           type="email"
           [ngModel]="model().email"
           (ngModelChange)="update('email', $event)"
           autocomplete="email"
+          placeholder="name@example.com"
         />
-      </label>
+      </div>
 
-      <label>
-        <span>{{ 'auth.phone' | translate }}</span>
-        <input pInputText name="phone" [ngModel]="model().phone" (ngModelChange)="update('phone', $event)" autocomplete="tel" />
-      </label>
-
-      <label>
-        <span>{{ 'auth.password' | translate }}</span>
+      <div class="field">
+        <label for="phone">{{ 'auth.phone' | translate }}</label>
         <input
+          id="phone"
+          pInputText
+          name="phone"
+          [ngModel]="model().phone"
+          (ngModelChange)="update('phone', $event)"
+          autocomplete="tel"
+          placeholder="+1 (555) 000-0000"
+        />
+      </div>
+
+      <div class="field">
+        <label for="reg-password">{{ 'auth.password' | translate }}</label>
+        <input
+          id="reg-password"
           pInputText
           name="password"
           type="password"
           [ngModel]="model().password"
           (ngModelChange)="update('password', $event)"
           autocomplete="new-password"
+          placeholder="••••••••"
         />
-      </label>
+        <small class="hint">Min 8 chars, mixed case, number & symbol</small>
+      </div>
 
       <p-button type="submit" styleClass="w-full" [label]="'auth.register' | translate" [disabled]="!canSubmit()" />
     </form>
-  `
+  `,
+  styles: [`
+    .register-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding-top: 8px;
+    }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .field label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--nt-text-secondary);
+    }
+    .field .hint {
+      font-size: 0.75rem;
+      color: var(--nt-text-tertiary);
+    }
+  `]
 })
 export class RegisterForm {
   readonly submitted = output<RegisterRequest>();
