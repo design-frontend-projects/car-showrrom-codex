@@ -52,6 +52,29 @@
         <a routerLink="/admin/requests" class="admin-link">{{ 'admin.title' | translate }}</a>
       }
     </div>
+
+    @if (usesDesktopNavigation()) {
+      <div class="auth-group">
+        @if (auth.isAuthenticated()) {
+          @if (canManageListings()) {
+            <a routerLink="/client/sell" class="nav-sell-link">
+              {{ 'sidebar.sellYourCar' | translate }}
+            </a>
+          }
+          <p-menu #userMenu [model]="userMenuItems()" [popup]="true" />
+          <button class="nav-user-button" type="button" (click)="userMenu.toggle($event)" aria-label="Open user menu">
+            <p-avatar [label]="userInitials()" shape="circle" />
+            <span>{{ auth.user()?.displayName }}</span>
+            <i class="pi pi-chevron-down"></i>
+          </button>
+        } @else {
+          <a routerLink="/client/sign-in" class="nav-signin-link">
+            {{ 'auth.signIn' | translate }}
+          </a>
+          <p-button styleClass="nav-register-button" [label]="'auth.register' | translate" (onClick)="registerOpen.set(true)" />
+        }
+      </div>
+    }
   </header>
 
   <p-drawer
@@ -93,7 +116,11 @@
       } @else if (canReviewRequests()) {
         <a routerLink="/admin/requests" (click)="closeDrawer()">{{ 'admin.title' | translate }}</a>
       }
+      <hr class="drawer-divider" />
       @if (auth.isAuthenticated()) {
+        @if (canManageListings()) {
+          <a routerLink="/client/sell" (click)="closeDrawer()">{{ 'sidebar.sellYourCar' | translate }}</a>
+        }
         <a routerLink="/client/profile" (click)="closeDrawer()">{{ 'auth.account.profile' | translate }}</a>
         <a routerLink="/client/security" (click)="closeDrawer()">{{ 'auth.account.security' | translate }}</a>
         <button class="drawer-action" type="button" (click)="auth.logoutLocal(); closeDrawer()">
@@ -104,38 +131,15 @@
           <i class="pi pi-power-off"></i>
           <span>{{ 'auth.signOut.global' | translate }}</span>
         </button>
+      } @else {
+        <a routerLink="/client/sign-in" (click)="closeDrawer()">{{ 'auth.signIn' | translate }}</a>
+        <button class="drawer-action" type="button" (click)="registerOpen.set(true); closeDrawer()">
+          <i class="pi pi-user-plus"></i>
+          <span>{{ 'auth.register' | translate }}</span>
+        </button>
       }
     </nav>
   </p-drawer>
-
-  <aside id="auth-rail" class="auth-rail">
-    @if (auth.isAuthenticated()) {
-      @if (canManageListings()) {
-      <a routerLink="/client/sell" class="sell-card">
-        <i class="pi pi-car"></i>
-        <span>{{ 'sidebar.sellYourCar' | translate }}</span>
-      </a>
-      }
-
-      <p-menu #userMenu [model]="userMenuItems()" [popup]="true" />
-      <button class="avatar-button" type="button" (click)="userMenu.toggle($event)" aria-label="Open user menu">
-        <p-avatar [label]="userInitials()" shape="circle" />
-        <span>{{ auth.user()?.displayName }}</span>
-        <i class="pi pi-chevron-down"></i>
-      </button>
-    } @else {
-      <div class="auth-card">
-        <span class="eyebrow">{{ 'auth.startSelling' | translate }}</span>
-        <h2>{{ 'auth.registerTitle' | translate }}</h2>
-        <p>{{ 'auth.registerCopy' | translate }}</p>
-        <p-button styleClass="w-full" [label]="'auth.register' | translate" icon="pi pi-user-plus" (onClick)="registerOpen.set(true)" />
-        <a routerLink="/client/sign-in" class="signin-link">
-          <i class="pi pi-sign-in"></i>
-          {{ 'auth.signIn' | translate }}
-        </a>
-      </div>
-    }
-  </aside>
 
   <main class="content" [@routeFade]="prepareRoute(outlet)">
     <router-outlet #outlet="outlet" />

@@ -6,13 +6,17 @@
   background: var(--surface-page);
 }
 
+.shell:has(app-landing-page) .content {
+  padding-inline: 0;
+}
+
 .topbar {
   position: sticky;
   top: 0;
   z-index: 30;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-3);
   min-height: var(--topbar-height);
   padding-inline: var(--page-pad);
@@ -69,6 +73,7 @@
 
 .nav-links {
   display: none;
+  flex: 1;
 }
 
 .nav-links a,
@@ -109,36 +114,18 @@
   display: none;
 }
 
-.auth-rail {
-  display: block;
-  padding: var(--space-3) var(--page-pad);
-  border-bottom: 1px solid var(--line);
-  background: color-mix(in srgb, var(--surface) 90%, transparent);
-  backdrop-filter: blur(18px);
-}
-
-.auth-card {
-  display: grid;
+.auth-group {
+  display: flex;
+  align-items: center;
   gap: var(--space-3);
+  margin-inline-start: var(--space-1);
+  padding-inline-start: var(--space-3);
+  border-inline-start: 1px solid var(--line);
 }
 
-.auth-card h2 {
-  margin: 0;
-  color: var(--ink);
-  font-size: 1.05rem;
-  line-height: 1.12;
-  font-weight: 900;
-}
-
-.auth-card p {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.5;
-}
-
-.signin-link,
-.sell-card,
-.avatar-button {
+.nav-signin-link,
+.nav-sell-link,
+.nav-user-button {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -146,43 +133,23 @@
   color: var(--ink);
   text-decoration: none;
   font-weight: 850;
-}
-
-.signin-link {
-  justify-content: center;
-  padding: 0 var(--space-sm);
-  border-radius: 0px;
-  background: var(--accent);
-  color: var(--on-primary);
   font-size: 13px;
-  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.65px;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  padding: 0 var(--space-xs);
   transition: all 0.2s ease;
 }
-.signin-link:hover {
-  background: var(--accent-hover);
-}
 
-.sell-card,
-.avatar-button {
-  justify-content: flex-start;
-  width: fit-content;
-  padding: 0;
-  border-bottom: 0;
-}
-
-.sell-card i {
+.nav-signin-link:hover,
+.nav-sell-link:hover,
+.nav-user-button:hover {
   color: var(--accent);
 }
 
-.avatar-button {
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-
-.avatar-button span {
+.nav-user-button span {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -191,6 +158,7 @@
 .content {
   min-width: 0;
   padding: 0 var(--page-pad) var(--space-5);
+  grid-column: 1;
 }
 
 .drawer-nav {
@@ -203,6 +171,12 @@
   border-bottom: 1px solid var(--line);
   border-radius: 0;
   padding-inline: 0;
+}
+
+.drawer-divider {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: var(--space-2) 0;
 }
 
 .drawer-action {
@@ -223,32 +197,15 @@
 }
 
 @media (min-width: 640px) {
-  .topbar {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-  }
-
   .brand-copy small {
     display: block;
-  }
-
-  .auth-card {
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    align-items: center;
-  }
-
-  .auth-card p {
-    display: none;
   }
 }
 
 @media (min-width: 1024px) {
   .shell {
-    grid-template-columns: clamp(10rem, 14vw, 13rem) minmax(0, 1fr);
+    grid-template-columns: 1fr;
     grid-template-rows: var(--topbar-height) minmax(0, 1fr);
-  }
-
-  .topbar {
-    grid-column: 1 / -1;
   }
 
   .nav-links {
@@ -262,44 +219,8 @@
     display: inline-flex;
   }
 
-  .auth-rail {
-    grid-column: 1;
-    grid-row: 2;
-    position: sticky;
-    top: var(--topbar-height);
-    align-self: start;
-    height: calc(100svh - var(--topbar-height));
-    display: grid;
-    align-content: start;
-    gap: var(--space-4);
-    padding: var(--space-4);
-    border-inline-end: 1px solid var(--line);
-    border-bottom: 0;
-  }
-
-  .auth-card {
-    grid-template-columns: 1fr;
-    gap: var(--space-3);
-  }
-
-  .auth-card p {
-    display: block;
-  }
-
-  .sell-card {
-    padding-bottom: var(--space-4);
-    border-bottom: 1px solid var(--line);
-  }
-
-  .avatar-button {
-    justify-content: space-between;
-    width: 100%;
-    padding-bottom: var(--space-4);
-    border-bottom: 1px solid var(--line);
-  }
-
   .content {
-    grid-column: 2;
+    grid-column: 1;
     grid-row: 2;
     padding: 0 var(--page-pad) var(--space-6);
   }

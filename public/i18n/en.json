@@ -20,7 +20,17 @@
     "usedCopy": "Certified pre-owned vehicles with transparent history.",
     "newCopy": "Factory-fresh models ready for reservation.",
     "servicesCopy": "Maintenance, inspection, detailing, and warranty support.",
-    "rentCopy": "Flexible premium rental options for short-term needs."
+    "rentCopy": "Flexible premium rental options for short-term needs.",
+    "heritage": {
+      "title": "Italian Engineering Masterpiece",
+      "subtitle": "Experience the pinnacle of automotive craftsmanship and track-bred innovation.",
+      "scuderiaTitle": "Scuderia Heritage",
+      "scuderiaCopy": "Born on the racetrack, refined for the grand touring experience.",
+      "v12Title": "V12 Symphony",
+      "v12Copy": "The pure acoustic and mechanical power of natural aspiration.",
+      "customTitle": "Atelier Customization",
+      "customCopy": "Tailored to your precise vision with bespoke materials and finishes."
+    }
   },
   "sidebar": {
     "sellYourCar": "Sell Your Car"

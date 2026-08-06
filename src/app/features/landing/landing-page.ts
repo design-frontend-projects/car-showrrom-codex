@@ -35,37 +35,74 @@ import { formatCurrency, formatMileage } from '../../utils/number-format.util';
         </form>
       </div>
 
-      <div class="hero-panel" aria-label="Featured vehicle">
-        <span>{{ 'landing.featured' | translate }}</span>
+      <div class="hero-panel glass-panel" aria-label="Featured vehicle">
+        <div class="panel-header">
+          <span class="status-badge">Scuderia Certified</span>
+          <span class="featured-label">{{ 'landing.featured' | translate }}</span>
+        </div>
         <strong>2026 Ferrari SF90 Stradale</strong>
         <dl>
           <div><dt>{{ 'landing.price' | translate }}</dt><dd>{{ price(524000) }}</dd></div>
           <div><dt>{{ 'landing.mileage' | translate }}</dt><dd>{{ mileage(1200) }}</dd></div>
-          <div><dt>{{ 'landing.status' | translate }}</dt><dd>Scuderia Certified</dd></div>
         </dl>
       </div>
     </section>
 
-    <section class="quick-grid" [attr.data-density]="heroDensity()" aria-label="Showroom categories">
-      <a routerLink="/used-cars">
+    <section class="brand-experience">
+      <div class="experience-header">
+        <h2>{{ 'landing.heritage.title' | translate }}</h2>
+        <p>{{ 'landing.heritage.subtitle' | translate }}</p>
+      </div>
+      <div class="experience-grid">
+        <div class="experience-card scuderia">
+          <div class="card-content">
+            <h3>{{ 'landing.heritage.scuderiaTitle' | translate }}</h3>
+            <p>{{ 'landing.heritage.scuderiaCopy' | translate }}</p>
+          </div>
+        </div>
+        <div class="experience-card v12">
+          <div class="card-content">
+            <h3>{{ 'landing.heritage.v12Title' | translate }}</h3>
+            <p>{{ 'landing.heritage.v12Copy' | translate }}</p>
+          </div>
+        </div>
+        <div class="experience-card atelier">
+          <div class="card-content">
+            <h3>{{ 'landing.heritage.customTitle' | translate }}</h3>
+            <p>{{ 'landing.heritage.customCopy' | translate }}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="quick-grid premium-grid" [attr.data-density]="heroDensity()" aria-label="Showroom categories">
+      <a routerLink="/used-cars" class="grid-item">
         <i class="pi pi-history"></i>
-        <strong>{{ 'nav.usedCars' | translate }}</strong>
-        <span>{{ counterText('used') }}</span>
+        <div class="item-content">
+          <strong>{{ 'nav.usedCars' | translate }}</strong>
+          <span>{{ counterText('used') }}</span>
+        </div>
       </a>
-      <a routerLink="/new-cars">
+      <a routerLink="/new-cars" class="grid-item">
         <i class="pi pi-sparkles"></i>
-        <strong>{{ 'nav.newCars' | translate }}</strong>
-        <span>{{ counterText('new') }}</span>
+        <div class="item-content">
+          <strong>{{ 'nav.newCars' | translate }}</strong>
+          <span>{{ counterText('new') }}</span>
+        </div>
       </a>
-      <a routerLink="/services">
+      <a routerLink="/services" class="grid-item">
         <i class="pi pi-wrench"></i>
-        <strong>{{ 'nav.services' | translate }}</strong>
-        <span>{{ 'landing.servicesCopy' | translate }}</span>
+        <div class="item-content">
+          <strong>{{ 'nav.services' | translate }}</strong>
+          <span>{{ 'landing.servicesCopy' | translate }}</span>
+        </div>
       </a>
-      <a routerLink="/rent">
+      <a routerLink="/rent" class="grid-item">
         <i class="pi pi-key"></i>
-        <strong>{{ 'nav.rent' | translate }}</strong>
-        <span>{{ 'landing.rentCopy' | translate }}</span>
+        <div class="item-content">
+          <strong>{{ 'nav.rent' | translate }}</strong>
+          <span>{{ 'landing.rentCopy' | translate }}</span>
+        </div>
       </a>
     </section>
   `
